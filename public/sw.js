@@ -1,5 +1,5 @@
-const CACHE_NAME = "lifeos-v1"
-const ASSETS = ["/", "/manifest.json"]
+const CACHE_NAME = "lifeos-v3"
+const ASSETS = ["/manifest.json"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))
@@ -16,9 +16,35 @@ self.addEventListener("activate", (event) => {
 })
 
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url)
+
+  // Never cache HTML, CSS, JS, or API routes - always fetch fresh
+  if (
+    event.request.method !== "GET" ||
+    url.pathname.startsWith("/api") ||
+    url.pathname.startsWith("/_next") ||
+    event.request.url.includes(".css") ||
+    event.request.url.includes(".js") ||
+    event.request.url.includes(".html") ||
+    url.pathname === "/" ||
+    url.pathname.startsWith("/auth")
+  ) {
+    event.respondWith(fetch(event.request))
+    return
+  }
+
+  // For other assets (images, fonts, manifest), use cache-first
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request)
+      return (
+        response ||
+        fetch(event.request).then((fetchResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, fetchResponse.clone())
+            return fetchResponse
+          })
+        })
+      )
     }),
   )
 })
