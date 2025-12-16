@@ -15,6 +15,7 @@ import { TaskListView } from "@/components/task-list-view"
 import { AddTaskForm } from "@/components/add-task-form"
 import { SettingsScreen } from "@/components/settings-screen"
 import { MenuDrawer } from "@/components/menu-drawer"
+import { generateTaskReasoning } from "@/lib/generate-reasoning"
 
 type View = "task" | "dashboard" | "settings" | "taskList"
 
@@ -343,11 +344,14 @@ export default function LifeOS() {
     dueAt: currentTask.deadline,
   }
 
-  const reasoning = {
-    energyMatch: 85,
-    priorityReason: "High priority task based on deadline and context",
-    contextNote: "Best time to work on this based on your patterns",
-  }
+  const reasoning = generateTaskReasoning({
+    title: currentTask.title,
+    priority: currentTask.priority,
+    energy_level: currentTask.energy_level,
+    estimated_minutes: currentTask.estimated_minutes,
+    deadline: currentTask.deadline,
+    created_at: currentTask.created_at,
+  })
 
   const userStats = {
     currentStreak: stats?.current_streak || 0,
