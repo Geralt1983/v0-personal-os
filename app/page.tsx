@@ -16,6 +16,12 @@ import { AddTaskForm } from "@/components/add-task-form"
 import { SettingsScreen } from "@/components/settings-screen"
 import { MenuDrawer } from "@/components/menu-drawer"
 import { generateTaskReasoning } from "@/lib/generate-reasoning"
+import { useStuckDetection } from "@/hooks/use-stuck-detection"
+import { useDailyPlanning } from "@/hooks/use-daily-planning"
+import { StuckTaskModal } from "@/components/stuck-task-modal"
+import { TaskBreakdownModal } from "@/components/task-breakdown-modal"
+import { DailyPlanningModal } from "@/components/daily-planning-modal"
+import { CompletionCelebration } from "@/components/completion-celebration"
 
 type View = "task" | "dashboard" | "settings" | "taskList"
 
@@ -27,6 +33,10 @@ export default function LifeOS() {
   const [editingTask, setEditingTask] = useState<any>(null)
   const [allTasks, setAllTasks] = useState<any[]>([])
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false)
+  const [showStuckModal, setShowStuckModal] = useState(false)
+  const [showBreakdownModal, setShowBreakdownModal] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [tasksCompletedToday, setTasksCompletedToday] = useState(0)
 
   const {
     currentTask,
@@ -41,6 +51,8 @@ export default function LifeOS() {
     refetch,
   } = useTasks()
   const { stats, loading: statsLoading } = useUserStats()
+  const { isStuck, stuckInfo, recordSkip } = useStuckDetection(currentTask?.id)
+  const { shouldShowPlanning, userEnergyLevel, completePlanning, dismissPlanning } = useDailyPlanning()
   const router = useRouter()
   const supabase = createClient()
 
@@ -84,12 +96,20 @@ export default function LifeOS() {
 
   const handleComplete = async () => {
     if (!currentTask) return
+    setShowCelebration(true)
+    setTasksCompletedToday((prev) => prev + 1)
     await completeTask(currentTask.id)
   }
 
   const handleCantDo = async (reason?: string) => {
     if (!currentTask) return
-    await skipTask(currentTask.id, reason)
+    await recordSkip(currentTask.id, reason)
+
+    if (stuckInfo && stuckInfo.skipCount >= 2) {
+      setShowStuckModal(true)
+    } else {
+      await skipTask(currentTask.id, reason)
+    }
   }
 
   const handleAddVoiceTask = async (taskTitle: string, date?: string, time?: string) => {
@@ -401,6 +421,78 @@ export default function LifeOS() {
       )}
 
       {view === "settings" && <SettingsScreen onBack={() => setView("task")} />}
+
+      <DailyPlanningModal
+        isOpen={shouldShowPlanning}
+        onClose={dismissPlanning}
+        tasks={tasks}
+        onSetEnergyLevel={(level) => completePlanning(level)}
+        onStartDay={(topTasks) => {
+          completePlanning(userEnergyLevel || "medium")
+        }}
+      />
+
+      <StuckTaskModal
+        isOpen={showStuckModal}
+        onClose={() => setShowStuckModal(false)}
+        task={currentTask ? { id: currentTask.id, title: currentTask.title } : { id: "", title: "" }}
+        skipCount={stuckInfo?.skipCount || 0}
+        onBreakDown={() => {
+          setShowStuckModal(false)
+          setShowBreakdownModal(true)
+        }}
+        onDelegate={() => {
+          setShowStuckModal(false)
+        }}
+        onHireOut={() => {
+          setShowStuckModal(false)
+        }}
+        onDelete={async () => {
+          if (currentTask) await deleteTask(currentTask.id)
+          setShowStuckModal(false)
+        }}
+        onKeep={(reason) => {
+          setShowStuckModal(false)
+        }}
+      />
+
+      <TaskBreakdownModal
+        isOpen={showBreakdownModal}
+        onClose={() => setShowBreakdownModal(false)}
+        task={currentTask ? { id: currentTask.id, title: currentTask.title } : { id: "", title: "" }}
+        onCreateSubtasks={async (subtasks) => {
+          for (const sub of subtasks) {
+            await addTask({
+              title: sub.title,
+              estimated_minutes: sub.estimatedMinutes,
+              energy_level: sub.energyLevel,
+              priority: "medium",
+            })
+          }
+          if (currentTask) await deleteTask(currentTask.id)
+          setShowBreakdownModal(false)
+          refetch()
+        }}
+        onReplaceWithFirst={async (subtask) => {
+          if (currentTask) {
+            await updateTask(currentTask.id, {
+              title: subtask.title,
+              estimated_minutes: subtask.estimatedMinutes,
+              energy_level: subtask.energyLevel,
+            })
+          }
+          setShowBreakdownModal(false)
+          refetch()
+        }}
+      />
+
+      <CompletionCelebration
+        isVisible={showCelebration}
+        onComplete={() => setShowCelebration(false)}
+        streak={stats?.current_streak || 0}
+        tasksCompletedToday={tasksCompletedToday}
+        isQuickWin={(currentTask?.estimated_minutes || 25) <= 10}
+      />
 
       <CommandPalette
         isOpen={commandPaletteOpen}
