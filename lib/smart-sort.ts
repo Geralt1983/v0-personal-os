@@ -1,11 +1,5 @@
 import type { Task } from "@/hooks/use-tasks"
 
-interface SortContext {
-  userEnergyLevel: "peak" | "medium" | "low"
-  currentHour?: number
-  isWeekend?: boolean
-}
-
 const energyToScore: Record<string, number> = {
   peak: 10,
   medium: 6,
@@ -18,111 +12,109 @@ const priorityToScore: Record<string, number> = {
   low: 3,
 }
 
-export function smartSortTasks(tasks: Task[], context?: Partial<SortContext>): Task[] {
-  const now = new Date()
-  const ctx: SortContext = {
-    userEnergyLevel: context?.userEnergyLevel ?? inferUserEnergy(now.getHours()),
-    currentHour: context?.currentHour ?? now.getHours(),
-    isWeekend: context?.isWeekend ?? (now.getDay() === 0 || now.getDay() === 6),
-  }
+export interface SortContext {
+  userEnergyLevel: "peak" | "medium" | "low"
+  currentHour?: number
+}
 
-  const userEnergy = energyToScore[ctx.userEnergyLevel] || 6
+export interface ScoredTask extends Task {
+  _scores: {
+    energyMatch: number
+    priority: number
+    urgency: number
+    quickWin: number
+    timeAlignment: number
+    total: number
+  }
+}
+
+export function smartSortTasks(tasks: Task[], context: SortContext): ScoredTask[] {
+  const { userEnergyLevel, currentHour = new Date().getHours() } = context
+  const userEnergy = energyToScore[userEnergyLevel] || 6
 
   return [...tasks]
-    .filter((t) => !t.completed && !t.skipped)
-    .map((task) => {
+    .map((task): ScoredTask => {
       const taskEnergy = energyToScore[task.energy_level || "medium"] || 6
       const taskPriority = priorityToScore[task.priority || "medium"] || 6
 
-      // Perfect match (delta=0) = 100, slight mismatch (delta=3) = 49, bad mismatch (delta=7) = 9
       const energyDelta = Math.abs(taskEnergy - userEnergy)
       const energyMatchScore = Math.pow(10 - energyDelta, 2)
 
-      // DEADLINE URGENCY SCORE
+      // Deadline urgency
       let urgencyScore = 0
       if (task.deadline) {
-        const hoursUntilDeadline = (new Date(task.deadline).getTime() - Date.now()) / (1000 * 60 * 60)
-        if (hoursUntilDeadline < 0) {
-          // Overdue - high urgency
-          urgencyScore = 50 + Math.min(50, (Math.abs(hoursUntilDeadline) / 24) * 10)
-        } else if (hoursUntilDeadline < 24) {
+        const hoursUntil = (new Date(task.deadline).getTime() - Date.now()) / (1000 * 60 * 60)
+        if (hoursUntil < 0) {
+          urgencyScore = 50 + Math.min(50, (Math.abs(hoursUntil) / 24) * 10)
+        } else if (hoursUntil < 24) {
           urgencyScore = 40
-        } else if (hoursUntilDeadline < 72) {
+        } else if (hoursUntil < 72) {
           urgencyScore = 20
         }
       }
 
-      const quickWinBonus = (task.estimated_minutes || 25) <= 10 && ctx.userEnergyLevel !== "peak" ? 15 : 0
+      // Quick win bonus
+      const quickWinBonus = (task.estimated_minutes || 25) <= 10 && userEnergyLevel !== "peak" ? 15 : 0
 
-      // TIME-OF-DAY ALIGNMENT
+      // Time alignment
       let timeAlignmentScore = 0
       const titleLower = (task.title || "").toLowerCase()
-      const currentHour = ctx.currentHour ?? new Date().getHours()
 
-      // Calls/meetings better in morning business hours
       if (titleLower.includes("call") || titleLower.includes("meeting")) {
-        if (currentHour >= 9 && currentHour <= 11) {
-          timeAlignmentScore = 10
-        } else if (currentHour >= 14 && currentHour <= 16) {
-          timeAlignmentScore = 5
-        }
+        if (currentHour >= 9 && currentHour <= 11) timeAlignmentScore = 10
+        else if (currentHour >= 14 && currentHour <= 16) timeAlignmentScore = 5
       }
-      // Deep work better in focus hours
       if (task.energy_level === "peak" && currentHour >= 9 && currentHour <= 11) {
         timeAlignmentScore = 10
       }
-      // Admin/low-energy tasks better in wind-down
       if (task.energy_level === "low" && currentHour >= 17) {
         timeAlignmentScore = 8
       }
 
-      // Priority base score
-      const priorityScore = taskPriority * 5
+      // Final score
+      const totalScore = energyMatchScore * 3 + taskPriority * 2 + urgencyScore + quickWinBonus + timeAlignmentScore
 
-      const totalScore = energyMatchScore * 3 + urgencyScore * 2 + priorityScore + quickWinBonus + timeAlignmentScore
-
-      return { task, score: totalScore }
+      return {
+        ...task,
+        _scores: {
+          energyMatch: energyMatchScore,
+          priority: taskPriority,
+          urgency: urgencyScore,
+          quickWin: quickWinBonus,
+          timeAlignment: timeAlignmentScore,
+          total: totalScore,
+        },
+      }
     })
-    .sort((a, b) => b.score - a.score)
-    .map((s) => s.task)
+    .sort((a, b) => b._scores.total - a._scores.total)
 }
 
-function inferUserEnergy(hour: number): "peak" | "medium" | "low" {
-  if ((hour >= 9 && hour <= 11) || (hour >= 14 && hour <= 16)) return "peak"
-  if ((hour >= 8 && hour < 9) || (hour > 11 && hour < 14) || (hour > 16 && hour <= 18)) return "medium"
-  return "low"
-}
-
-export function calculateEnergyMatch(taskEnergy: string, userEnergy: "peak" | "medium" | "low"): number {
-  const taskScore = energyToScore[taskEnergy] || 6
+export function calculateEnergyMatch(taskEnergy: string | undefined, userEnergy: "peak" | "medium" | "low"): number {
+  const taskScore = energyToScore[taskEnergy || "medium"] || 6
   const userScore = energyToScore[userEnergy] || 6
   const delta = Math.abs(taskScore - userScore)
-  // Returns 0-100 percentage
-  return Math.round(Math.pow(10 - delta, 2))
+
+  const maxDelta = 7
+  const minMatch = 45
+  const maxMatch = 95
+
+  return Math.round(maxMatch - (delta / maxDelta) * (maxMatch - minMatch))
 }
 
-export function getTaskSortingReason(task: Task, userEnergy?: "peak" | "medium" | "low"): string {
+export function getTaskSelectionReason(task: ScoredTask): string {
+  const scores = task._scores
+  if (!scores) return "Next task in your queue."
+
   const reasons: string[] = []
-  const energy = userEnergy ?? inferUserEnergy(new Date().getHours())
 
-  // Check deadline
-  if (task.deadline) {
-    const hoursUntil = (new Date(task.deadline).getTime() - Date.now()) / (1000 * 60 * 60)
-    if (hoursUntil < 0) reasons.push("overdue")
-    else if (hoursUntil < 24) reasons.push("due today")
-    else if (hoursUntil < 72) reasons.push("due soon")
-  }
+  if (scores.energyMatch >= 81) reasons.push("Perfect energy match")
+  else if (scores.energyMatch >= 49) reasons.push("Good energy fit")
 
-  // Check energy match
-  const match = calculateEnergyMatch(task.energy_level || "medium", energy)
-  if (match >= 80) reasons.push("energy match")
-  else if (match <= 30) reasons.push("energy mismatch")
+  if (scores.urgency >= 50) reasons.push("Overdue - needs attention")
+  else if (scores.urgency >= 40) reasons.push("Due today")
 
-  // Check quick win
-  if ((task.estimated_minutes || 25) <= 10) reasons.push("quick win")
+  if (scores.quickWin > 0) reasons.push("Quick win")
+  if (scores.timeAlignment >= 10) reasons.push("Ideal time for this")
 
-  // Check priority
-  if (task.priority === "high") reasons.push("high priority")
-
-  return reasons.length > 0 ? reasons.slice(0, 2).join(" • ") : "Next in queue"
+  return reasons.length > 0 ? reasons.slice(0, 2).join(". ") + "." : "Next in your prioritized queue."
 }

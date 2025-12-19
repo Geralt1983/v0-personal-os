@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+
+import { useEffect } from "react"
 import { ViewManager } from "@/components/view-manager"
 import { CommandPalette } from "@/components/command-palette"
 import { VoiceReminderScreen } from "@/components/voice-reminder-screen"
@@ -19,28 +21,21 @@ import { StuckTaskModal } from "@/components/stuck-task-modal"
 import { TaskBreakdownModal } from "@/components/task-breakdown-modal"
 import { DailyPlanningModal } from "@/components/daily-planning-modal"
 import { CompletionCelebration } from "@/components/completion-celebration"
-
-type View = "task" | "dashboard" | "settings" | "taskList"
+import { useAppStore } from "@/lib/stores/app-store"
 
 export default function LifeOS() {
-  // View state
-  const [view, setView] = useState<View>("task")
+  const {
+    currentView,
+    modals,
+    editingTask,
+    userEnergyLevel,
+    setView,
+    openModal,
+    closeModal,
+    setEditingTask,
+    navigateAndClose,
+  } = useAppStore()
 
-  // Modal states
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
-  const [voiceReminderOpen, setVoiceReminderOpen] = useState(false)
-  const [addTaskFormOpen, setAddTaskFormOpen] = useState(false)
-  const [menuDrawerOpen, setMenuDrawerOpen] = useState(false)
-  const [showStuckModal, setShowStuckModal] = useState(false)
-  const [showBreakdownModal, setShowBreakdownModal] = useState(false)
-  const [showCelebration, setShowCelebration] = useState(false)
-
-  // Data states
-  const [editingTask, setEditingTask] = useState<any>(null)
-  const [allTasks, setAllTasks] = useState<any[]>([])
-  const [tasksCompletedToday, setTasksCompletedToday] = useState(0)
-
-  // Hooks
   const {
     currentTask,
     tasks,
@@ -51,15 +46,15 @@ export default function LifeOS() {
     deleteTask,
     updateTask,
     getAllTasks,
+    resortForEnergy,
     refetch,
   } = useTasks()
   const { stats, loading: statsLoading } = useUserStats()
   const { isStuck, stuckInfo, recordSkip } = useStuckDetection(currentTask?.id)
-  const { shouldShowPlanning, userEnergyLevel, completePlanning, dismissPlanning } = useDailyPlanning()
+  const { shouldShowPlanning, completePlanning, dismissPlanning } = useDailyPlanning()
   const router = useRouter()
   const supabase = createClient()
 
-  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -70,27 +65,27 @@ export default function LifeOS() {
       }
     }
     checkAuth()
-  }, [])
+  }, [router, supabase])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault()
-        setCommandPaletteOpen(true)
+        openModal("commandPalette")
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  }, [openModal])
 
-  // Load all tasks when viewing task list
   useEffect(() => {
-    if (view === "taskList") {
+    if (currentView === "taskList") {
       loadAllTasks()
     }
-  }, [view])
+  }, [currentView])
+
+  const [allTasks, setAllTasks] = useState<any[]>([])
 
   const loadAllTasks = async () => {
     const allTasksData = await getAllTasks()
@@ -99,20 +94,7 @@ export default function LifeOS() {
 
   const handleComplete = async () => {
     if (!currentTask) return
-    setShowCelebration(true)
-    setTasksCompletedToday((prev) => prev + 1)
     await completeTask(currentTask.id)
-  }
-
-  const handleCantDo = async (reason?: string) => {
-    if (!currentTask) return
-    await recordSkip(currentTask.id, reason)
-
-    if (stuckInfo && stuckInfo.skipCount >= 2) {
-      setShowStuckModal(true)
-    } else {
-      await skipTask(currentTask.id, reason)
-    }
   }
 
   const handleAddVoiceTask = async (taskTitle: string, date?: string, time?: string) => {
@@ -160,7 +142,7 @@ export default function LifeOS() {
 
   const handleEditTask = (task: any) => {
     setEditingTask(task)
-    setAddTaskFormOpen(true)
+    openModal("addTask")
   }
 
   const handleCommandAction = (action: string) => {
@@ -169,29 +151,24 @@ export default function LifeOS() {
         handleComplete()
         break
       case "dashboard":
-        setView("dashboard")
+        navigateAndClose("dashboard")
         break
       case "taskList":
-        setView("taskList")
+        navigateAndClose("taskList")
         break
       case "addTask":
-        setAddTaskFormOpen(true)
+        openModal("addTask")
         break
       case "settings":
-        setView("settings")
+        navigateAndClose("settings")
         break
       default:
         break
     }
   }
 
-  const handleNavigate = (newView: View) => {
-    setView(newView)
-    setMenuDrawerOpen(false)
-  }
-
-  const handleOpenAddTask = () => {
-    setAddTaskFormOpen(true)
+  const handleCantDo = () => {
+    // Placeholder
   }
 
   if (tasksLoading || statsLoading) {
@@ -232,7 +209,7 @@ export default function LifeOS() {
   return (
     <>
       <ViewManager
-        currentView={view}
+        currentView={currentView}
         tasks={tasks}
         currentTask={currentTask}
         stats={userStats}
@@ -241,16 +218,15 @@ export default function LifeOS() {
         allTasks={allTasks}
         onComplete={handleComplete}
         onCantDo={handleCantDo}
-        onNavigate={handleNavigate}
-        onAddTask={handleOpenAddTask}
+        onNavigate={(view) => navigateAndClose(view)}
+        onAddTask={() => openModal("addTask")}
         onToggleComplete={handleToggleComplete}
         onDeleteTask={handleDeleteTask}
         onEditTask={handleEditTask}
-        onOpenMenuDrawer={() => setMenuDrawerOpen(true)}
-        onOpenVoiceReminder={() => setVoiceReminderOpen(true)}
+        onOpenMenuDrawer={() => openModal("menuDrawer")}
+        onOpenVoiceReminder={() => openModal("voiceReminder")}
       />
 
-      {/* Modals and overlays */}
       <DailyPlanningModal
         isOpen={shouldShowPlanning}
         onClose={dismissPlanning}
@@ -262,33 +238,28 @@ export default function LifeOS() {
       />
 
       <StuckTaskModal
-        isOpen={showStuckModal}
-        onClose={() => setShowStuckModal(false)}
+        isOpen={modals.stuckTask}
+        onClose={() => closeModal("stuckTask")}
         task={currentTask ? { id: currentTask.id, title: currentTask.title } : { id: "", title: "" }}
         skipCount={stuckInfo?.skipCount || 0}
         onBreakDown={() => {
-          setShowStuckModal(false)
-          setShowBreakdownModal(true)
+          closeModal("stuckTask")
+          openModal("breakdown")
         }}
-        onDelegate={() => {
-          setShowStuckModal(false)
-        }}
-        onHireOut={() => {
-          setShowStuckModal(false)
-        }}
+        onDelegate={() => closeModal("stuckTask")}
+        onHireOut={() => closeModal("stuckTask")}
         onDelete={async () => {
           if (currentTask) await deleteTask(currentTask.id)
-          setShowStuckModal(false)
+          closeModal("stuckTask")
         }}
-        onKeep={(reason) => {
-          setShowStuckModal(false)
-        }}
+        onKeep={(reason) => closeModal("stuckTask")}
       />
 
       <TaskBreakdownModal
-        isOpen={showBreakdownModal}
-        onClose={() => setShowBreakdownModal(false)}
+        isOpen={modals.breakdown}
+        onClose={() => closeModal("breakdown")}
         task={currentTask ? { id: currentTask.id, title: currentTask.title } : { id: "", title: "" }}
+        userEnergy={userEnergyLevel}
         onCreateSubtasks={async (subtasks) => {
           for (const sub of subtasks) {
             await addTask({
@@ -298,8 +269,10 @@ export default function LifeOS() {
               priority: "medium",
             })
           }
-          if (currentTask) await deleteTask(currentTask.id)
-          setShowBreakdownModal(false)
+          if (currentTask) {
+            await completeTask(currentTask.id)
+          }
+          closeModal("breakdown")
           refetch()
         }}
         onReplaceWithFirst={async (subtask) => {
@@ -310,22 +283,20 @@ export default function LifeOS() {
               energy_level: subtask.energyLevel,
             })
           }
-          setShowBreakdownModal(false)
+          closeModal("breakdown")
           refetch()
+        }}
+        onCompleteMainTask={async () => {
+          if (currentTask) await completeTask(currentTask.id)
+          closeModal("breakdown")
         }}
       />
 
-      <CompletionCelebration
-        isVisible={showCelebration}
-        onComplete={() => setShowCelebration(false)}
-        streak={stats?.current_streak || 0}
-        tasksCompletedToday={tasksCompletedToday}
-        isQuickWin={(currentTask?.estimated_minutes || 25) <= 10}
-      />
+      <CompletionCelebration />
 
       <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
+        isOpen={modals.commandPalette}
+        onClose={() => closeModal("commandPalette")}
         tasks={tasks.map((t) => ({
           id: t.id,
           title: t.title,
@@ -346,32 +317,32 @@ export default function LifeOS() {
       />
 
       <AddTaskForm
-        isOpen={addTaskFormOpen}
+        isOpen={modals.addTask}
         onClose={() => {
-          setAddTaskFormOpen(false)
+          closeModal("addTask")
           setEditingTask(null)
         }}
         onSubmit={handleAddTaskSubmit}
         initialTask={editingTask}
       />
 
-      {voiceReminderOpen && (
-        <VoiceReminderScreen onClose={() => setVoiceReminderOpen(false)} onAddTask={handleAddVoiceTask} />
+      {modals.voiceReminder && (
+        <VoiceReminderScreen onClose={() => closeModal("voiceReminder")} onAddTask={handleAddVoiceTask} />
       )}
 
       <MenuDrawer
-        isOpen={menuDrawerOpen}
-        onClose={() => setMenuDrawerOpen(false)}
-        onNavigate={handleNavigate}
-        onAddTask={handleOpenAddTask}
+        isOpen={modals.menuDrawer}
+        onClose={() => closeModal("menuDrawer")}
+        onNavigate={(view) => navigateAndClose(view)}
+        onAddTask={() => openModal("addTask")}
       />
 
-      {!voiceReminderOpen && view === "task" && (
+      {!modals.voiceReminder && currentView === "task" && (
         <motion.button
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          onClick={() => setVoiceReminderOpen(true)}
+          onClick={() => openModal("voiceReminder")}
           className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg shadow-purple-500/30 flex items-center justify-center hover:shadow-xl hover:shadow-purple-500/40 transition-shadow z-40"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

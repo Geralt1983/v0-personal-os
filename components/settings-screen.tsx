@@ -42,6 +42,9 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
   const [showStreak, setShowStreak] = useState(true)
   const [weeklySummary, setWeeklySummary] = useState(false)
   const [reduceAnimations, setReduceAnimations] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [hapticEnabled, setHapticEnabled] = useState(true)
+  const [confettiEnabled, setConfettiEnabled] = useState(true)
 
   const supabase = createClient()
   const router = useRouter()
@@ -65,12 +68,18 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
       const savedShowStreak = localStorage.getItem("showStreak")
       const savedWeekly = localStorage.getItem("weeklySummary")
       const savedAnimations = localStorage.getItem("reduceAnimations")
+      const savedSound = localStorage.getItem("celebrationSound")
+      const savedHaptic = localStorage.getItem("celebrationHaptic")
+      const savedConfetti = localStorage.getItem("celebrationConfetti")
 
       if (savedAutoBreaks) setAutoStartBreaks(savedAutoBreaks === "true")
       if (savedShowTrust) setShowTrustScore(savedShowTrust === "true")
       if (savedShowStreak) setShowStreak(savedShowStreak === "true")
       if (savedWeekly) setWeeklySummary(savedWeekly === "true")
       if (savedAnimations) setReduceAnimations(savedAnimations === "true")
+      if (savedSound !== null) setSoundEnabled(savedSound === "true")
+      if (savedHaptic !== null) setHapticEnabled(savedHaptic === "true")
+      if (savedConfetti !== null) setConfettiEnabled(savedConfetti === "true")
     }
 
     loadSettings()
@@ -103,6 +112,15 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
         break
       case "reduceAnimations":
         setReduceAnimations(value)
+        break
+      case "celebrationSound":
+        setSoundEnabled(value)
+        break
+      case "celebrationHaptic":
+        setHapticEnabled(value)
+        break
+      case "celebrationConfetti":
+        setConfettiEnabled(value)
         break
     }
   }
@@ -182,6 +200,31 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
             toggle
             toggleValue={reduceAnimations}
             onToggle={(val) => handleToggle("reduceAnimations", val)}
+          />
+        </SettingsSection>
+
+        {/* Celebrations Section */}
+        <SettingsSection title="CELEBRATIONS">
+          <SettingsRow
+            icon={<Sparkles size={20} />}
+            label="Sound Effects"
+            toggle
+            toggleValue={soundEnabled}
+            onToggle={(val) => handleToggle("celebrationSound", val)}
+          />
+          <SettingsRow
+            icon={<Smartphone size={20} />}
+            label="Haptic Feedback"
+            toggle
+            toggleValue={hapticEnabled}
+            onToggle={(val) => handleToggle("celebrationHaptic", val)}
+          />
+          <SettingsRow
+            icon={<Sparkles size={20} />}
+            label="Confetti"
+            toggle
+            toggleValue={confettiEnabled}
+            onToggle={(val) => handleToggle("celebrationConfetti", val)}
           />
         </SettingsSection>
 

@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { smartSortTasks, type ScoredTask } from "@/lib/smart-sort"
+import { useAppStore } from "@/lib/stores/app-store"
 
 export interface Task {
   id: string
@@ -22,26 +24,23 @@ export interface Task {
 }
 
 export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [currentTask, setCurrentTask] = useState<Task | null>(null)
+  const [tasks, setTasks] = useState<ScoredTask[]>([])
+  const [currentTask, setCurrentTask] = useState<ScoredTask | null>(null)
   const [loading, setLoading] = useState(true)
+
   const supabase = createClient()
+  const { userEnergyLevel, triggerCelebration, incrementTasksCompleted } = useAppStore()
 
-  useEffect(() => {
-    fetchTasks()
-  }, [])
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-
     if (!user) {
       setLoading(false)
       return
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("tasks")
       .select("*")
       .eq("user_id", user.id)
@@ -50,109 +49,185 @@ export function useTasks() {
       .order("position", { ascending: true })
 
     if (data) {
-      setTasks(data)
-      setCurrentTask(data[0] || null)
+      const sorted = smartSortTasks(data, { userEnergyLevel })
+      setTasks(sorted)
+      setCurrentTask(sorted[0] || null)
     }
     setLoading(false)
-  }
+  }, [supabase, userEnergyLevel])
 
-  const addTask = async (task: Partial<Task>) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return null
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert({ ...task, user_id: user.id })
-      .select()
-      .single()
+  const resortForEnergy = useCallback(
+    (energy: "peak" | "medium" | "low") => {
+      const sorted = smartSortTasks(tasks, { userEnergyLevel: energy })
+      setTasks(sorted)
+      setCurrentTask(sorted[0] || null)
+    },
+    [tasks],
+  )
 
-    if (data) {
-      setTasks((prev) => [...prev, data])
-      if (!currentTask) setCurrentTask(data)
-    }
-    return data
-  }
+  const completeTask = useCallback(
+    async (id: string) => {
+      const taskToComplete = tasks.find((t) => t.id === id)
+      const previousTasks = [...tasks]
+      const previousCurrentTask = currentTask
 
-  const completeTask = async (id: string) => {
-    const previousTasks = tasks
-    const previousCurrentTask = currentTask
+      const remainingTasks = tasks.filter((t) => t.id !== id)
+      setTasks(remainingTasks)
+      setCurrentTask(remainingTasks[0] || null)
 
-    // Optimistically update UI immediately
-    const nextTask = tasks.find((t) => t.id !== id) || null
-    setTasks((prev) => prev.filter((t) => t.id !== id))
-    setCurrentTask(nextTask)
+      if (taskToComplete) {
+        incrementTasksCompleted()
+        triggerCelebration({
+          taskTitle: taskToComplete.title,
+          wasQuickWin: (taskToComplete.estimated_minutes || 25) <= 10,
+          wasOverdue: taskToComplete.deadline ? new Date(taskToComplete.deadline) < new Date() : false,
+        })
+      }
 
-    try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ completed: true, completed_at: new Date().toISOString() })
-        .eq("id", id)
+      try {
+        const { error } = await supabase
+          .from("tasks")
+          .update({ completed: true, completed_at: new Date().toISOString() })
+          .eq("id", id)
 
-      if (error) throw error
+        if (error) throw error
+        await updateStats("complete")
+      } catch (error) {
+        console.error("[LifeOS] Complete failed, rolling back:", error)
+        setTasks(previousTasks)
+        setCurrentTask(previousCurrentTask)
+      }
+    },
+    [tasks, currentTask, supabase, triggerCelebration, incrementTasksCompleted],
+  )
 
-      await updateStats("complete")
-    } catch (error) {
-      // Revert on error
-      console.error("[v0] Error completing task:", error)
-      setTasks(previousTasks)
-      setCurrentTask(previousCurrentTask)
-    }
-  }
+  const skipTask = useCallback(
+    async (id: string, reason?: string) => {
+      const previousTasks = [...tasks]
+      const previousCurrentTask = currentTask
 
-  const skipTask = async (id: string, reason?: string) => {
-    const previousTasks = tasks
-    const previousCurrentTask = currentTask
+      const remainingTasks = tasks.filter((t) => t.id !== id)
+      setTasks(remainingTasks)
+      setCurrentTask(remainingTasks[0] || null)
 
-    // Optimistically update UI immediately
-    const nextTask = tasks.find((t) => t.id !== id) || null
-    setTasks((prev) => prev.filter((t) => t.id !== id))
-    setCurrentTask(nextTask)
+      try {
+        const { error } = await supabase.from("tasks").update({ skipped: true, skip_reason: reason }).eq("id", id)
 
-    try {
-      const { error } = await supabase.from("tasks").update({ skipped: true, skip_reason: reason }).eq("id", id)
+        if (error) throw error
+        await updateStats("skip")
+      } catch (error) {
+        console.error("[LifeOS] Skip failed, rolling back:", error)
+        setTasks(previousTasks)
+        setCurrentTask(previousCurrentTask)
+      }
+    },
+    [tasks, currentTask, supabase],
+  )
 
-      if (error) throw error
+  const addTask = useCallback(
+    async (task: Partial<Task>) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return null
 
-      await updateStats("skip")
-    } catch (error) {
-      // Revert on error
-      console.error("[v0] Error skipping task:", error)
-      setTasks(previousTasks)
-      setCurrentTask(previousCurrentTask)
-    }
-  }
+      const optimisticId = `optimistic-${Date.now()}`
+      const optimisticTask: Task = {
+        id: optimisticId,
+        user_id: user.id,
+        title: task.title || "",
+        description: task.description,
+        energy_level: task.energy_level || "medium",
+        priority: task.priority || "medium",
+        estimated_minutes: task.estimated_minutes || 25,
+        deadline: task.deadline,
+        completed: false,
+        skipped: false,
+        position: tasks.length,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
 
-  const deleteTask = async (id: string) => {
-    const { error } = await supabase.from("tasks").delete().eq("id", id)
+      const newTasks = smartSortTasks([...tasks, optimisticTask], { userEnergyLevel })
+      setTasks(newTasks)
+      if (!currentTask) setCurrentTask(newTasks[0])
 
-    if (!error) {
+      try {
+        const { data, error } = await supabase
+          .from("tasks")
+          .insert({ ...task, user_id: user.id })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        setTasks((prev) => {
+          const updated = prev.map((t) => (t.id === optimisticId ? { ...data, _scores: t._scores } : t))
+          return smartSortTasks(updated, { userEnergyLevel })
+        })
+
+        return data
+      } catch (error) {
+        console.error("[LifeOS] Add task failed:", error)
+        setTasks((prev) => prev.filter((t) => t.id !== optimisticId))
+        return null
+      }
+    },
+    [tasks, currentTask, supabase, userEnergyLevel],
+  )
+
+  const updateTask = useCallback(
+    async (id: string, updates: Partial<Task>) => {
+      const previousTasks = [...tasks]
+
+      setTasks((prev) => {
+        const updated = prev.map((t) => (t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
+        return smartSortTasks(updated, { userEnergyLevel })
+      })
+
+      try {
+        const { data, error } = await supabase.from("tasks").update(updates).eq("id", id).select().single()
+
+        if (error) throw error
+        return data
+      } catch (error) {
+        console.error("[LifeOS] Update failed:", error)
+        setTasks(previousTasks)
+        return null
+      }
+    },
+    [tasks, supabase, userEnergyLevel],
+  )
+
+  const deleteTask = useCallback(
+    async (id: string) => {
+      const previousTasks = [...tasks]
+
       setTasks((prev) => prev.filter((t) => t.id !== id))
       if (currentTask?.id === id) {
-        const nextTask = tasks.find((t) => t.id !== id) || null
-        setCurrentTask(nextTask)
+        const remaining = tasks.filter((t) => t.id !== id)
+        setCurrentTask(remaining[0] || null)
       }
-    }
-  }
 
-  const updateTask = async (id: string, updates: Partial<Task>) => {
-    const { data, error } = await supabase.from("tasks").update(updates).eq("id", id).select().single()
-
-    if (data && !error) {
-      setTasks((prev) => prev.map((t) => (t.id === id ? data : t)))
-      if (currentTask?.id === id) {
-        setCurrentTask(data)
+      try {
+        const { error } = await supabase.from("tasks").delete().eq("id", id)
+        if (error) throw error
+      } catch (error) {
+        console.error("[LifeOS] Delete failed:", error)
+        setTasks(previousTasks)
       }
-    }
-    return data
-  }
+    },
+    [tasks, currentTask, supabase],
+  )
 
   const getAllTasks = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-
     if (!user) return []
 
     const { data, error } = await supabase
@@ -176,18 +251,21 @@ export function useTasks() {
 
     const today = new Date().toISOString().split("T")[0]
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0]
-    const isConsecutiveDay = stats.last_completed_date === yesterday
+    const isConsecutive = stats.last_completed_date === yesterday || stats.last_completed_date === today
+    const isNewDay = stats.last_completed_date !== today
 
     const updates = {
       total_completed: action === "complete" ? stats.total_completed + 1 : stats.total_completed,
       total_skipped: action === "skip" ? stats.total_skipped + 1 : stats.total_skipped,
       current_streak:
         action === "complete"
-          ? isConsecutiveDay || stats.last_completed_date === today
-            ? stats.current_streak + 1
+          ? isConsecutive
+            ? isNewDay
+              ? stats.current_streak + 1
+              : stats.current_streak
             : 1
           : stats.current_streak,
-      trust_score: Math.min(100, Math.max(0, action === "complete" ? stats.trust_score + 2 : stats.trust_score - 5)),
+      trust_score: Math.min(100, Math.max(0, action === "complete" ? stats.trust_score + 2 : stats.trust_score - 3)),
       last_completed_date: action === "complete" ? today : stats.last_completed_date,
       updated_at: new Date().toISOString(),
     }
@@ -205,6 +283,7 @@ export function useTasks() {
     deleteTask,
     updateTask,
     getAllTasks,
+    resortForEnergy,
     refetch: fetchTasks,
   }
 }
