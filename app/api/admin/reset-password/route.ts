@@ -3,6 +3,13 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
   try {
+    const authHeader = request.headers.get("Authorization")
+    const adminKey = process.env.ADMIN_API_KEY
+
+    if (!authHeader || !authHeader.startsWith("Bearer ") || authHeader.split(" ")[1] !== adminKey) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { email, newPassword } = await request.json()
 
     if (!email || !newPassword) {
@@ -15,7 +22,6 @@ export async function POST(request: Request) {
 
     const supabase = createClient()
 
-    // Get the user by email
     const { data: userData, error: userError } = await supabase
       .from("profiles")
       .select("id")
@@ -26,7 +32,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Use the admin auth API to update the user's password
     const { error: updateError } = await supabase.auth.admin.updateUserById(userData.id, {
       password: newPassword,
     })

@@ -1,19 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SingleTaskView } from "@/components/single-task-view"
-import { WarRoomDashboard } from "@/components/war-room-dashboard"
+import { ViewManager } from "@/components/view-manager"
 import { CommandPalette } from "@/components/command-palette"
 import { VoiceReminderScreen } from "@/components/voice-reminder-screen"
-import { Mic, Loader2, Menu, Plus, ListTodo } from "lucide-react"
+import { Mic, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useTasks } from "@/hooks/use-tasks"
 import { useUserStats } from "@/hooks/use-user-stats"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { TaskListView } from "@/components/task-list-view"
 import { AddTaskForm } from "@/components/add-task-form"
-import { SettingsScreen } from "@/components/settings-screen"
 import { MenuDrawer } from "@/components/menu-drawer"
 import { generateTaskReasoning } from "@/lib/generate-reasoning"
 import { useStuckDetection } from "@/hooks/use-stuck-detection"
@@ -26,18 +23,24 @@ import { CompletionCelebration } from "@/components/completion-celebration"
 type View = "task" | "dashboard" | "settings" | "taskList"
 
 export default function LifeOS() {
+  // View state
   const [view, setView] = useState<View>("task")
+
+  // Modal states
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [voiceReminderOpen, setVoiceReminderOpen] = useState(false)
   const [addTaskFormOpen, setAddTaskFormOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<any>(null)
-  const [allTasks, setAllTasks] = useState<any[]>([])
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false)
   const [showStuckModal, setShowStuckModal] = useState(false)
   const [showBreakdownModal, setShowBreakdownModal] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+
+  // Data states
+  const [editingTask, setEditingTask] = useState<any>(null)
+  const [allTasks, setAllTasks] = useState<any[]>([])
   const [tasksCompletedToday, setTasksCompletedToday] = useState(0)
 
+  // Hooks
   const {
     currentTask,
     tasks,
@@ -56,21 +59,20 @@ export default function LifeOS() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
-      console.log("[v0] Checking auth on page load")
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      console.log("[v0] Auth check result:", { user: user?.id })
       if (!user) {
-        console.log("[v0] No user, redirecting to login")
         router.push("/auth/login")
       }
     }
     checkAuth()
   }, [])
 
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -83,6 +85,7 @@ export default function LifeOS() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
+  // Load all tasks when viewing task list
   useEffect(() => {
     if (view === "taskList") {
       loadAllTasks()
@@ -125,14 +128,10 @@ export default function LifeOS() {
   }
 
   const handleAddTaskSubmit = async (taskData: any) => {
-    console.log("[v0] handleAddTaskSubmit called:", { editingTask: !!editingTask, taskData })
-
     if (editingTask) {
-      console.log("[v0] Updating task:", editingTask.id)
       await updateTask(editingTask.id, taskData)
       setEditingTask(null)
     } else {
-      console.log("[v0] Creating new task")
       await addTask(taskData)
     }
 
@@ -160,7 +159,6 @@ export default function LifeOS() {
   }
 
   const handleEditTask = (task: any) => {
-    console.log("[v0] handleEditTask called:", task)
     setEditingTask(task)
     setAddTaskFormOpen(true)
   }
@@ -187,14 +185,12 @@ export default function LifeOS() {
     }
   }
 
-  const handleNavigate = (newView: "task" | "dashboard" | "settings" | "taskList") => {
-    console.log("[v0] Page handleNavigate called with:", newView, "current view:", view)
+  const handleNavigate = (newView: View) => {
     setView(newView)
     setMenuDrawerOpen(false)
   }
 
   const handleOpenAddTask = () => {
-    console.log("[v0] handleOpenAddTask called")
     setAddTaskFormOpen(true)
   }
 
@@ -209,169 +205,16 @@ export default function LifeOS() {
     )
   }
 
-  if (!currentTask && view === "task") {
-    return (
-      <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16]">
-        {/* Header with menu access */}
-        <header className="flex items-center justify-between px-6 py-6">
-          <button
-            onClick={() => setMenuDrawerOpen(true)}
-            className="p-3 rounded-full bg-[#1a2332] border border-white/10"
-          >
-            <Menu className="w-5 h-5 text-slate-400" />
-          </button>
-          <button
-            onClick={handleOpenAddTask}
-            className="p-3 rounded-full bg-emerald-500/20 border border-emerald-500/30"
-          >
-            <Plus className="w-5 h-5 text-emerald-400" />
-          </button>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center p-6 min-h-[70vh]">
-          <div className="text-center max-w-md">
-            <div className="text-6xl mb-4">🎯</div>
-            <h2 className="text-2xl font-bold text-white mb-2">All Clear!</h2>
-            <p className="text-slate-400 mb-8">No pending tasks. Add one using the buttons below.</p>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => setVoiceReminderOpen(true)}
-                className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-700 text-white font-semibold flex items-center justify-center gap-2"
-              >
-                <Mic className="w-5 h-5" />
-                Voice Capture
-              </button>
-
-              <button
-                onClick={handleOpenAddTask}
-                className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Add Task Manually
-              </button>
-
-              <button
-                onClick={() => {
-                  console.log("[v0] View All Tasks clicked from empty state")
-                  setView("taskList")
-                }}
-                className="w-full px-6 py-3 rounded-full bg-[#1a2332] border border-white/10 text-slate-300 font-medium flex items-center justify-center gap-2"
-              >
-                <ListTodo className="w-5 h-5" />
-                View All Tasks
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Menu Drawer for empty state */}
-        <MenuDrawer
-          isOpen={menuDrawerOpen}
-          onClose={() => setMenuDrawerOpen(false)}
-          onNavigate={handleNavigate}
-          onAddTask={handleOpenAddTask}
-        />
-
-        {/* Add Task Form */}
-        <AddTaskForm
-          isOpen={addTaskFormOpen}
-          onClose={() => {
-            setAddTaskFormOpen(false)
-            setEditingTask(null)
-          }}
-          onSubmit={handleAddTaskSubmit}
-          initialTask={editingTask}
-        />
-
-        {/* Voice Reminder */}
-        {voiceReminderOpen && (
-          <VoiceReminderScreen onClose={() => setVoiceReminderOpen(false)} onAddTask={handleAddVoiceTask} />
-        )}
-
-        {/* Command Palette */}
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-          tasks={[]}
-          onAction={handleCommandAction}
-        />
-      </div>
-    )
-  }
-
-  if (!currentTask && (view === "taskList" || view === "settings" || view === "dashboard")) {
-    return (
-      <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16]">
-        {view === "taskList" && (
-          <TaskListView
-            tasks={allTasks}
-            onBack={() => setView("task")}
-            onAddTask={handleOpenAddTask}
-            onToggleComplete={handleToggleComplete}
-            onDeleteTask={handleDeleteTask}
-            onEditTask={handleEditTask}
-          />
-        )}
-
-        {view === "settings" && <SettingsScreen onBack={() => setView("task")} />}
-
-        {view === "dashboard" && (
-          <WarRoomDashboard
-            stats={{ currentStreak: stats?.current_streak || 0, trustScore: stats?.trust_score || 50 }}
-            surveillanceTasks={[]}
-            onBack={() => setView("task")}
-            onTaskSelect={() => setView("task")}
-          />
-        )}
-
-        {/* Add Task Form */}
-        <AddTaskForm
-          isOpen={addTaskFormOpen}
-          onClose={() => {
-            setAddTaskFormOpen(false)
-            setEditingTask(null)
-          }}
-          onSubmit={handleAddTaskSubmit}
-          initialTask={editingTask}
-        />
-
-        {/* Command Palette */}
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-          tasks={[]}
-          onAction={handleCommandAction}
-        />
-      </div>
-    )
-  }
-
-  const taskForView = {
-    id: currentTask.id,
-    title: currentTask.title,
-    status: "pending" as const,
-    context: "Work" as const,
-    tags: [],
-    estimatedMinutes: currentTask.estimated_minutes || 25,
-    bestTime: "now" as const,
-    friction: "medium" as const,
-    size: "medium" as const,
-    quickWin: false,
-    delegateCandidate: false,
-    vendorCandidate: false,
-    createdAt: currentTask.created_at,
-    dueAt: currentTask.deadline,
-  }
-
-  const reasoning = generateTaskReasoning({
-    title: currentTask.title,
-    priority: currentTask.priority,
-    energy_level: currentTask.energy_level,
-    estimated_minutes: currentTask.estimated_minutes,
-    deadline: currentTask.deadline,
-    created_at: currentTask.created_at,
-  })
+  const reasoning = currentTask
+    ? generateTaskReasoning({
+        title: currentTask.title,
+        priority: currentTask.priority,
+        energy_level: currentTask.energy_level,
+        estimated_minutes: currentTask.estimated_minutes,
+        deadline: currentTask.deadline,
+        created_at: currentTask.created_at,
+      })
+    : { energyMatch: 0, priorityReason: "", contextNote: "" }
 
   const userStats = {
     currentStreak: stats?.current_streak || 0,
@@ -387,41 +230,27 @@ export default function LifeOS() {
     }))
 
   return (
-    <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16]">
-      {view === "task" && (
-        <SingleTaskView
-          task={taskForView}
-          reasoning={reasoning}
-          stats={userStats}
-          onComplete={handleComplete}
-          onCantDo={handleCantDo}
-          onNavigate={handleNavigate}
-          onAddTask={handleOpenAddTask}
-        />
-      )}
+    <>
+      <ViewManager
+        currentView={view}
+        tasks={tasks}
+        currentTask={currentTask}
+        stats={userStats}
+        reasoning={reasoning}
+        surveillanceTasks={surveillanceTasks}
+        allTasks={allTasks}
+        onComplete={handleComplete}
+        onCantDo={handleCantDo}
+        onNavigate={handleNavigate}
+        onAddTask={handleOpenAddTask}
+        onToggleComplete={handleToggleComplete}
+        onDeleteTask={handleDeleteTask}
+        onEditTask={handleEditTask}
+        onOpenMenuDrawer={() => setMenuDrawerOpen(true)}
+        onOpenVoiceReminder={() => setVoiceReminderOpen(true)}
+      />
 
-      {view === "dashboard" && (
-        <WarRoomDashboard
-          stats={userStats}
-          surveillanceTasks={surveillanceTasks}
-          onBack={() => setView("task")}
-          onTaskSelect={() => setView("task")}
-        />
-      )}
-
-      {view === "taskList" && (
-        <TaskListView
-          tasks={allTasks}
-          onBack={() => setView("task")}
-          onAddTask={handleOpenAddTask}
-          onToggleComplete={handleToggleComplete}
-          onDeleteTask={handleDeleteTask}
-          onEditTask={handleEditTask}
-        />
-      )}
-
-      {view === "settings" && <SettingsScreen onBack={() => setView("task")} />}
-
+      {/* Modals and overlays */}
       <DailyPlanningModal
         isOpen={shouldShowPlanning}
         onClose={dismissPlanning}
@@ -530,6 +359,13 @@ export default function LifeOS() {
         <VoiceReminderScreen onClose={() => setVoiceReminderOpen(false)} onAddTask={handleAddVoiceTask} />
       )}
 
+      <MenuDrawer
+        isOpen={menuDrawerOpen}
+        onClose={() => setMenuDrawerOpen(false)}
+        onNavigate={handleNavigate}
+        onAddTask={handleOpenAddTask}
+      />
+
       {!voiceReminderOpen && view === "task" && (
         <motion.button
           initial={{ scale: 0 }}
@@ -543,6 +379,6 @@ export default function LifeOS() {
           <Mic className="w-7 h-7 text-white" fill="currentColor" />
         </motion.button>
       )}
-    </div>
+    </>
   )
 }

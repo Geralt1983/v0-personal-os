@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, SlidersHorizontal, Brain, Play, Pause, Check, Flame, Zap, Plus } from "lucide-react"
 import { ReasoningCard } from "./reasoning-card"
@@ -48,7 +48,6 @@ export function SingleTaskView({
       setTimeLeft((prev) => {
         if (prev <= 1) {
           setTimerRunning(false)
-          // Show notification when timer completes
           if (typeof window !== "undefined" && "Notification" in window) {
             if (Notification.permission === "granted") {
               new Notification("Timer Complete!", {
@@ -72,17 +71,15 @@ export function SingleTaskView({
     return { mins: mins.toString().padStart(2, "0"), secs: secs.toString().padStart(2, "0") }
   }
 
-  const handleComplete = () => {
+  const handleComplete = useCallback(() => {
     setIsCompleting(true)
-    // Trigger confetti or success animation here
     setTimeout(() => {
       onComplete()
       setIsCompleting(false)
-      // Reset timer for next task
       setTimeLeft(defaultTimerMinutes * 60)
       setTimerRunning(false)
     }, 800)
-  }
+  }, [onComplete, defaultTimerMinutes])
 
   const handleTimerSave = (minutes: number) => {
     setTimeLeft(minutes * 60)

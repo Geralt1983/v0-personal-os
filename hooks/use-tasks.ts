@@ -32,9 +32,19 @@ export function useTasks() {
   }, [])
 
   const fetchTasks = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
+      .eq("user_id", user.id)
       .eq("completed", false)
       .eq("skipped", false)
       .order("position", { ascending: true })
@@ -66,27 +76,51 @@ export function useTasks() {
   }
 
   const completeTask = async (id: string) => {
-    const { error } = await supabase
-      .from("tasks")
-      .update({ completed: true, completed_at: new Date().toISOString() })
-      .eq("id", id)
+    const previousTasks = tasks
+    const previousCurrentTask = currentTask
 
-    if (!error) {
-      setTasks((prev) => prev.filter((t) => t.id !== id))
-      const nextTask = tasks.find((t) => t.id !== id) || null
-      setCurrentTask(nextTask)
+    // Optimistically update UI immediately
+    const nextTask = tasks.find((t) => t.id !== id) || null
+    setTasks((prev) => prev.filter((t) => t.id !== id))
+    setCurrentTask(nextTask)
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ completed: true, completed_at: new Date().toISOString() })
+        .eq("id", id)
+
+      if (error) throw error
+
       await updateStats("complete")
+    } catch (error) {
+      // Revert on error
+      console.error("[v0] Error completing task:", error)
+      setTasks(previousTasks)
+      setCurrentTask(previousCurrentTask)
     }
   }
 
   const skipTask = async (id: string, reason?: string) => {
-    const { error } = await supabase.from("tasks").update({ skipped: true, skip_reason: reason }).eq("id", id)
+    const previousTasks = tasks
+    const previousCurrentTask = currentTask
 
-    if (!error) {
-      setTasks((prev) => prev.filter((t) => t.id !== id))
-      const nextTask = tasks.find((t) => t.id !== id) || null
-      setCurrentTask(nextTask)
+    // Optimistically update UI immediately
+    const nextTask = tasks.find((t) => t.id !== id) || null
+    setTasks((prev) => prev.filter((t) => t.id !== id))
+    setCurrentTask(nextTask)
+
+    try {
+      const { error } = await supabase.from("tasks").update({ skipped: true, skip_reason: reason }).eq("id", id)
+
+      if (error) throw error
+
       await updateStats("skip")
+    } catch (error) {
+      // Revert on error
+      console.error("[v0] Error skipping task:", error)
+      setTasks(previousTasks)
+      setCurrentTask(previousCurrentTask)
     }
   }
 
@@ -115,7 +149,17 @@ export function useTasks() {
   }
 
   const getAllTasks = async () => {
-    const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
 
     return data || []
   }
