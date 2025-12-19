@@ -16,11 +16,13 @@ export function useStuckDetection(taskId: string | undefined) {
   const supabase = createClient()
 
   useEffect(() => {
-    if (!taskId) return
+    if (!taskId || taskId.startsWith("optimistic-")) return
     checkStuckStatus(taskId)
   }, [taskId])
 
   const checkStuckStatus = async (id: string) => {
+    if (id.startsWith("optimistic-")) return
+
     const { data } = await supabase
       .from("task_skip_history")
       .select("*")
@@ -42,6 +44,8 @@ export function useStuckDetection(taskId: string | undefined) {
   }
 
   const recordSkip = async (taskId: string, reason?: string) => {
+    if (taskId.startsWith("optimistic-")) return
+
     const {
       data: { user },
     } = await supabase.auth.getUser()

@@ -143,29 +143,6 @@ export function useTasks() {
         return null
       }
 
-      const optimisticId = `optimistic-${Date.now()}`
-      const optimisticTask: Task = {
-        id: optimisticId,
-        user_id: user.id,
-        title: task.title || "",
-        description: task.description,
-        energy_level: task.energy_level || "medium",
-        priority: task.priority || "medium",
-        estimated_minutes: task.estimated_minutes || 25,
-        deadline: task.deadline,
-        completed: false,
-        skipped: false,
-        position: tasks.length,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      console.log("[v0] addTask - optimistic task created:", optimisticTask.title)
-
-      const newTasks = smartSortTasks([...tasks, optimisticTask], { userEnergyLevel })
-      setTasks(newTasks)
-      if (!currentTask) setCurrentTask(newTasks[0])
-
       try {
         const insertData = {
           user_id: user.id,
@@ -191,19 +168,15 @@ export function useTasks() {
 
         console.log("[v0] addTask - Supabase success, task id:", data.id)
 
-        setTasks((prev) => {
-          const updated = prev.map((t) => (t.id === optimisticId ? { ...data, _scores: t._scores } : t))
-          return smartSortTasks(updated, { userEnergyLevel })
-        })
+        await fetchTasks()
 
         return data
       } catch (error: any) {
         console.error("[v0] addTask - failed:", error?.message || error)
-        setTasks((prev) => prev.filter((t) => t.id !== optimisticId))
         return null
       }
     },
-    [tasks, currentTask, supabase, userEnergyLevel],
+    [tasks, supabase, fetchTasks],
   )
 
   const updateTask = useCallback(
