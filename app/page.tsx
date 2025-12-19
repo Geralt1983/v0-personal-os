@@ -110,11 +110,17 @@ export default function LifeOS() {
   }
 
   const handleAddTaskSubmit = async (taskData: any) => {
+    console.log("[v0] handleAddTaskSubmit called with:", taskData)
+    console.log("[v0] handleAddTaskSubmit - editingTask:", editingTask?.id || "none")
+
     if (editingTask) {
+      console.log("[v0] handleAddTaskSubmit - updating existing task")
       await updateTask(editingTask.id, taskData)
       setEditingTask(null)
     } else {
-      await addTask(taskData)
+      console.log("[v0] handleAddTaskSubmit - creating new task")
+      const result = await addTask(taskData)
+      console.log("[v0] handleAddTaskSubmit - addTask result:", result)
     }
 
     await loadAllTasks()

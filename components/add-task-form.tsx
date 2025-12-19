@@ -52,18 +52,26 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
     e.preventDefault()
     if (!title.trim()) return
 
-    console.log("[v0] AddTaskForm submitting:", { title, initialTask: !!initialTask })
+    console.log("[v0] AddTaskForm handleSubmit called")
+    console.log("[v0] AddTaskForm - title:", title)
+    console.log("[v0] AddTaskForm - isEditMode:", !!initialTask)
 
     setSubmitting(true)
     try {
-      await onSubmit({
+      const taskData = {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
         energy_level: energyLevel,
         estimated_minutes: estimatedMinutes,
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
-      })
+      }
+
+      console.log("[v0] AddTaskForm - calling onSubmit with:", taskData)
+
+      await onSubmit(taskData)
+
+      console.log("[v0] AddTaskForm - onSubmit completed successfully")
 
       if (!initialTask) {
         setTitle("")
@@ -75,7 +83,7 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
       }
       onClose()
     } catch (error) {
-      console.error("[v0] Failed to add/update task:", error)
+      console.error("[v0] AddTaskForm - onSubmit failed:", error)
     } finally {
       setSubmitting(false)
     }

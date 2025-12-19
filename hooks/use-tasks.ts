@@ -130,10 +130,18 @@ export function useTasks() {
 
   const addTask = useCallback(
     async (task: Partial<Task>) => {
+      console.log("[v0] addTask called with:", task)
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) return null
+
+      console.log("[v0] addTask - user:", user?.id || "NO USER")
+
+      if (!user) {
+        console.log("[v0] addTask - No user found, returning null")
+        return null
+      }
 
       const optimisticId = `optimistic-${Date.now()}`
       const optimisticTask: Task = {
@@ -152,18 +160,36 @@ export function useTasks() {
         updated_at: new Date().toISOString(),
       }
 
+      console.log("[v0] addTask - optimistic task created:", optimisticTask.title)
+
       const newTasks = smartSortTasks([...tasks, optimisticTask], { userEnergyLevel })
       setTasks(newTasks)
       if (!currentTask) setCurrentTask(newTasks[0])
 
       try {
-        const { data, error } = await supabase
-          .from("tasks")
-          .insert({ ...task, user_id: user.id })
-          .select()
-          .single()
+        const insertData = {
+          user_id: user.id,
+          title: task.title,
+          description: task.description || null,
+          energy_level: task.energy_level || "medium",
+          priority: task.priority || "medium",
+          estimated_minutes: task.estimated_minutes || 25,
+          deadline: task.deadline || null,
+          completed: false,
+          skipped: false,
+          position: tasks.length,
+        }
 
-        if (error) throw error
+        console.log("[v0] addTask - inserting to Supabase:", insertData)
+
+        const { data, error } = await supabase.from("tasks").insert(insertData).select().single()
+
+        if (error) {
+          console.error("[v0] addTask - Supabase error:", error.message, error.details, error.hint)
+          throw error
+        }
+
+        console.log("[v0] addTask - Supabase success, task id:", data.id)
 
         setTasks((prev) => {
           const updated = prev.map((t) => (t.id === optimisticId ? { ...data, _scores: t._scores } : t))
@@ -171,8 +197,8 @@ export function useTasks() {
         })
 
         return data
-      } catch (error) {
-        console.error("[LifeOS] Add task failed:", error)
+      } catch (error: any) {
+        console.error("[v0] addTask - failed:", error?.message || error)
         setTasks((prev) => prev.filter((t) => t.id !== optimisticId))
         return null
       }
