@@ -1,20 +1,24 @@
 import type { Reasoning } from "./types"
 
-export function generateTaskReasoning(task: {
-  title: string
-  priority?: string
-  energy_level?: string
-  estimated_minutes?: number
-  deadline?: string
-  created_at?: string
-}): Reasoning {
+export function generateTaskReasoning(
+  task: {
+    title: string
+    priority?: string
+    energy_level?: string
+    estimated_minutes?: number
+    deadline?: string
+    created_at?: string
+  },
+  isPostReset = false,
+  tasksCompletedToday = 0,
+): Reasoning {
   const now = new Date()
   const currentHour = now.getHours()
   const dayOfWeek = now.getDay()
 
   const energyMatch = calculateEnergyMatch(currentHour, task.energy_level)
-  const priorityReason = generatePriorityReason(task)
-  const contextNote = generateContextNote(currentHour, dayOfWeek, task)
+  const priorityReason = generatePriorityReason(task, isPostReset, tasksCompletedToday)
+  const contextNote = generateContextNote(currentHour, dayOfWeek, task, isPostReset)
 
   return {
     energyMatch,
@@ -45,12 +49,26 @@ function calculateEnergyMatch(hour: number, taskEnergy?: string): number {
   return 45
 }
 
-function generatePriorityReason(task: {
-  priority?: string
-  deadline?: string
-  estimated_minutes?: number
-  title: string
-}): string {
+function generatePriorityReason(
+  task: {
+    priority?: string
+    deadline?: string
+    estimated_minutes?: number
+    title: string
+  },
+  isPostReset: boolean,
+  tasksCompletedToday: number,
+): string {
+  // Post-reset encouragement
+  if (isPostReset) {
+    if (tasksCompletedToday === 0) {
+      return "You reset recently. This small task is perfect to rebuild momentum."
+    }
+    if (tasksCompletedToday > 0) {
+      return `${tasksCompletedToday} down already. Keep building.`
+    }
+  }
+
   const reasons: string[] = []
 
   if (task.deadline) {
@@ -96,7 +114,13 @@ function generateContextNote(
   hour: number,
   dayOfWeek: number,
   task: { title: string; estimated_minutes?: number; energy_level?: string },
+  isPostReset: boolean,
 ): string {
+  // Post-reset context
+  if (isPostReset && task.estimated_minutes && task.estimated_minutes <= 10) {
+    return "Starting with quick wins helps rebuild confidence and momentum."
+  }
+
   const titleLower = task.title.toLowerCase()
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
   const isMorning = hour >= 6 && hour < 12

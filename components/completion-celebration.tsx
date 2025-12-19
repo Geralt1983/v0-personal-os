@@ -11,7 +11,7 @@ interface CelebrationConfig {
   subtitle: string
   accentColor: string
   confettiCount: number
-  soundEffect?: "pop" | "chime" | "whoosh" | "levelup"
+  soundEffect?: "pop" | "chime" | "whoosh" | "levelup" | "gentle"
 }
 
 function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
@@ -44,91 +44,99 @@ function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
   )
 }
 
-function playSound(type: CelebrationConfig["soundEffect"]) {
-  if (typeof window === "undefined") return
+function playSound(type: CelebrationConfig["soundEffect"], enabled: boolean) {
+  if (!enabled || typeof window === "undefined") return
 
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
 
-    switch (type) {
-      case "pop":
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1)
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
-        oscillator.start(audioContext.currentTime)
-        oscillator.stop(audioContext.currentTime + 0.1)
-        break
-
-      case "chime":
-        oscillator.frequency.setValueAtTime(523, audioContext.currentTime)
-        oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1)
-        oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2)
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
-        oscillator.start(audioContext.currentTime)
-        oscillator.stop(audioContext.currentTime + 0.4)
-        break
-
-      case "levelup":
-        oscillator.frequency.setValueAtTime(400, audioContext.currentTime)
-        oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.15)
-        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.3)
-        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
-        oscillator.start(audioContext.currentTime)
-        oscillator.stop(audioContext.currentTime + 0.4)
-        break
-
-      default:
-        oscillator.type = "sine"
-        oscillator.frequency.setValueAtTime(150, audioContext.currentTime)
-        oscillator.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.2)
-        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
-        oscillator.start(audioContext.currentTime)
-        oscillator.stop(audioContext.currentTime + 0.2)
+    if (type === "gentle") {
+      osc.frequency.setValueAtTime(440, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.1, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.4)
+    } else if (type === "levelup") {
+      osc.frequency.setValueAtTime(400, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15)
+      osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.2, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.4)
+    } else if (type === "chime") {
+      osc.frequency.setValueAtTime(523, ctx.currentTime)
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1)
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2)
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.4)
+    } else {
+      osc.frequency.setValueAtTime(800, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1)
+      gain.gain.setValueAtTime(0.2, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.1)
     }
-  } catch (e) {
-    // Audio not available, fail silently
-  }
+  } catch (e) {}
 }
 
-function triggerHaptic(pattern: "light" | "medium" | "heavy" | "success") {
-  if (typeof navigator === "undefined" || !navigator.vibrate) return
-
-  switch (pattern) {
-    case "light":
-      navigator.vibrate(10)
-      break
-    case "medium":
-      navigator.vibrate(25)
-      break
-    case "heavy":
-      navigator.vibrate(50)
-      break
-    case "success":
-      navigator.vibrate([50, 30, 100])
-      break
-  }
+function triggerHaptic(enabled: boolean) {
+  if (!enabled || typeof navigator === "undefined" || !navigator.vibrate) return
+  navigator.vibrate([50, 30, 100])
 }
 
 export function CompletionCelebration() {
-  const { celebration, dismissCelebration, tasksCompletedToday } = useAppStore()
+  const { celebration, dismissCelebration, tasksCompletedToday, preferences } = useAppStore()
   const { stats } = useUserStats()
-  const [config, setConfig] = useState<CelebrationConfig | null>(null)
+  const [config, setConfig] = useState<any>(null)
   const [showConfetti, setShowConfetti] = useState(false)
 
   const confettiColors = ["#00d4ff", "#00ff88", "#a78bfa", "#fbbf24", "#f472b6"]
   const streak = stats?.current_streak || 0
 
-  const getCelebrationConfig = useCallback((): CelebrationConfig => {
-    const { wasQuickWin, wasOverdue, wasFromBreakdown, stepsCompleted } = celebration
+  const getCelebrationConfig = useCallback((): any => {
+    const { wasQuickWin, wasOverdue, wasFromBreakdown, stepsCompleted, wasPostReset } = celebration
+
+    // POST-RESET: Gentler, encouraging celebrations
+    if (wasPostReset) {
+      if (tasksCompletedToday === 1) {
+        return {
+          emoji: "🌱",
+          title: "First step!",
+          subtitle: "You're back. That's what matters.",
+          accentColor: "#10b981",
+          confettiCount: 5,
+          soundEffect: "gentle",
+        }
+      }
+      if (tasksCompletedToday === 3) {
+        return {
+          emoji: "🌿",
+          title: "Building momentum",
+          subtitle: `${tasksCompletedToday} down already. Keep building.`,
+          accentColor: "#10b981",
+          confettiCount: 8,
+          soundEffect: "gentle",
+        }
+      }
+      return {
+        emoji: "✨",
+        title: "Progress",
+        subtitle: `${tasksCompletedToday} tasks completed. One step at a time.`,
+        accentColor: "#06b6d4",
+        confettiCount: 5,
+        soundEffect: "gentle",
+      }
+    }
 
     // Milestone celebrations
     if (tasksCompletedToday === 10) {
@@ -231,8 +239,7 @@ export function CompletionCelebration() {
       }
     }
 
-    // Default celebrations
-    const defaults: CelebrationConfig[] = [
+    const defaults: any[] = [
       {
         emoji: "✅",
         title: "Done!",
@@ -246,14 +253,6 @@ export function CompletionCelebration() {
         title: "Nice work!",
         subtitle: "Keep the momentum going",
         accentColor: "#8b5cf6",
-        confettiCount: 5,
-        soundEffect: "pop",
-      },
-      {
-        emoji: "💫",
-        title: "Completed!",
-        subtitle: "You're making progress",
-        accentColor: "#06b6d4",
         confettiCount: 5,
         soundEffect: "pop",
       },
@@ -271,10 +270,13 @@ export function CompletionCelebration() {
 
     const celebrationConfig = getCelebrationConfig()
     setConfig(celebrationConfig)
-    setShowConfetti(true)
 
-    playSound(celebrationConfig.soundEffect)
-    triggerHaptic(celebrationConfig.confettiCount > 15 ? "success" : "medium")
+    if (preferences.confettiEnabled) {
+      setShowConfetti(true)
+    }
+
+    playSound(celebrationConfig.soundEffect, preferences.soundEnabled)
+    triggerHaptic(preferences.hapticEnabled)
 
     const timer = setTimeout(
       () => {
@@ -284,13 +286,12 @@ export function CompletionCelebration() {
     )
 
     return () => clearTimeout(timer)
-  }, [celebration.isVisible, getCelebrationConfig, dismissCelebration])
+  }, [celebration.isVisible, getCelebrationConfig, dismissCelebration, preferences])
 
   return (
     <AnimatePresence>
       {celebration.isVisible && config && (
         <>
-          {/* Confetti Layer */}
           {showConfetti && (
             <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {Array.from({ length: config.confettiCount }).map((_, i) => (
@@ -353,7 +354,7 @@ export function CompletionCelebration() {
                 {config.subtitle}
               </motion.p>
 
-              {streak > 1 && (
+              {preferences.showStreak && streak > 1 && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
