@@ -13,55 +13,21 @@ function shouldCache(url) {
   return !NO_CACHE_PATTERNS.some((pattern) => pattern.test(url))
 }
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))
-  self.skipWaiting()
-})
+self.addEventListener("install", () => self.skipWaiting())
 
 self.addEventListener("activate", (event) => {
   console.log("[SW] Activating, clearing old caches")
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log("[SW] Deleting old cache:", name)
-            return caches.delete(name)
-          }),
-      )
+      return Promise.all(cacheNames.map((name) => caches.delete(name)))
     }),
   )
   self.clients.claim()
 })
 
 self.addEventListener("fetch", (event) => {
-  const url = event.request.url
-
-  // NEVER cache API calls - always go to network
-  if (!shouldCache(url)) {
-    event.respondWith(fetch(event.request))
-    return
-  }
-
-  // For static assets, use network-first with cache fallback
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache successful responses for static assets only
-        if (response.ok && shouldCache(url)) {
-          const responseClone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone)
-          })
-        }
-        return response
-      })
-      .catch(() => {
-        // Fallback to cache only for static assets
-        return caches.match(event.request)
-      }),
-  )
+  // Pass through all requests directly to network - no caching
+  event.respondWith(fetch(event.request))
 })
 
 // Handle push notifications for reminders
@@ -86,7 +52,13 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close()
 
-  if (event.action === "open" || !event.action) {
+  if (event.action === "complete") {
+    // Handle complete action
+    console.log("Task completed")
+  } else if (event.action === "snooze") {
+    // Handle snooze action
+    console.log("Task snoozed for 10 minutes")
+  } else {
     event.waitUntil(clients.openWindow("/"))
   }
 })
