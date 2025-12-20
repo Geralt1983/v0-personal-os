@@ -88,6 +88,24 @@ export default function LifeOS() {
 
   const [allTasks, setAllTasks] = useState<any[]>([])
 
+  useEffect(() => {
+    if (allTasks.length > 0 && tasks.length > 0) {
+      const activeTasks = new Set(tasks.map((t) => t.id))
+
+      setAllTasks((prev) => {
+        const updated = prev.map((t) => {
+          // If a task is NOT in useTasks (which only has pending), mark it completed
+          if (!activeTasks.has(t.id) && !t.completed && !t.skipped) {
+            console.log("[v0] Syncing task to completed in allTasks:", t.title)
+            return { ...t, completed: true, completed_at: new Date().toISOString() }
+          }
+          return t
+        })
+        return updated
+      })
+    }
+  }, [tasks, allTasks.length])
+
   const loadAllTasks = async () => {
     const allTasksData = await getAllTasks()
     setAllTasks(allTasksData)

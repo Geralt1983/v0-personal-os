@@ -1,5 +1,17 @@
 const CACHE_NAME = "lifeos-v3"
-const ASSETS = ["/manifest.json"]
+const ASSETS = ["/", "/manifest.json"]
+
+const NO_CACHE_PATTERNS = [
+  /supabase/, // All Supabase API calls
+  /\.supabase\.co/, // Supabase domain
+  /api\//, // Any API routes
+  /auth/, // Auth endpoints
+  /_next\/data/, // Next.js data fetching
+]
+
+function shouldCache(url) {
+  return !NO_CACHE_PATTERNS.some((pattern) => pattern.test(url))
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))
@@ -7,45 +19,48 @@ self.addEventListener("install", (event) => {
 })
 
 self.addEventListener("activate", (event) => {
+  console.log("[SW] Activating, clearing old caches")
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name)))
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => {
+            console.log("[SW] Deleting old cache:", name)
+            return caches.delete(name)
+          }),
+      )
     }),
   )
   self.clients.claim()
 })
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url)
+  const url = event.request.url
 
-  // Never cache HTML, CSS, JS, or API routes - always fetch fresh
-  if (
-    event.request.method !== "GET" ||
-    url.pathname.startsWith("/api") ||
-    url.pathname.startsWith("/_next") ||
-    event.request.url.includes(".css") ||
-    event.request.url.includes(".js") ||
-    event.request.url.includes(".html") ||
-    url.pathname === "/" ||
-    url.pathname.startsWith("/auth")
-  ) {
+  // NEVER cache API calls - always go to network
+  if (!shouldCache(url)) {
     event.respondWith(fetch(event.request))
     return
   }
 
-  // For other assets (images, fonts, manifest), use cache-first
+  // For static assets, use network-first with cache fallback
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return (
-        response ||
-        fetch(event.request).then((fetchResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, fetchResponse.clone())
-            return fetchResponse
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful responses for static assets only
+        if (response.ok && shouldCache(url)) {
+          const responseClone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone)
           })
-        })
-      )
-    }),
+        }
+        return response
+      })
+      .catch(() => {
+        // Fallback to cache only for static assets
+        return caches.match(event.request)
+      }),
   )
 })
 
@@ -71,11 +86,9 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close()
 
-  if (event.action === "complete") {
-    event.waitUntil(clients.openWindow("/?action=complete&task=" + event.notification.tag))
-  } else if (event.action === "snooze") {
-    event.waitUntil(clients.openWindow("/?action=snooze&task=" + event.notification.tag))
-  } else {
+  if (event.action === "open" || !event.action) {
     event.waitUntil(clients.openWindow("/"))
   }
 })
+
+console.log("[SW] Service worker loaded, version:", CACHE_NAME)
