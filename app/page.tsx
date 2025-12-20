@@ -278,6 +278,9 @@ export default function LifeOS() {
   const userStats = {
     currentStreak: stats?.current_streak || 0,
     trustScore: stats?.trust_score || 50,
+    weeklyCompletionRate: stats?.weekly_completion_rate || 0,
+    energyAccuracy: stats?.energy_accuracy || 0,
+    avgCompletionTime: stats?.avg_completion_time || 0,
   }
 
   const surveillanceTasks = tasks
