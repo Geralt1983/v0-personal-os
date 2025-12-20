@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Re-enable TypeScript error checking
   },
   images: {
     unoptimized: true,
@@ -9,12 +9,25 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        source: "/sw.js",
         headers: [
           {
             key: "Content-Type",
-            value: "text/html; charset=utf-8",
+            value: "application/javascript; charset=utf-8",
           },
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+      {
+        source: "/:path*",
+        headers: [
           {
             key: "Cache-Control",
             value: "public, max-age=3600, must-revalidate",

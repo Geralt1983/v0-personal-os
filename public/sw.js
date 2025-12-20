@@ -1,32 +1,30 @@
-const CACHE_NAME = "lifeos-v3"
-const ASSETS = ["/", "/manifest.json"]
+const CACHE_NAME = "lifeos-v5"
 
-const NO_CACHE_PATTERNS = [
-  /supabase/, // All Supabase API calls
-  /\.supabase\.co/, // Supabase domain
-  /api\//, // Any API routes
-  /auth/, // Auth endpoints
-  /_next\/data/, // Next.js data fetching
-]
-
-function shouldCache(url) {
-  return !NO_CACHE_PATTERNS.some((pattern) => pattern.test(url))
-}
-
-self.addEventListener("install", () => self.skipWaiting())
+self.addEventListener("install", (event) => {
+  console.log("[SW] Installing version:", CACHE_NAME)
+  self.skipWaiting()
+})
 
 self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating, clearing old caches")
+  console.log("[SW] Activating version:", CACHE_NAME)
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(cacheNames.map((name) => caches.delete(name)))
-    }),
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => {
+              console.log("[SW] Deleting old cache:", name)
+              return caches.delete(name)
+            }),
+        )
+      })
+      .then(() => self.clients.claim()),
   )
-  self.clients.claim()
 })
 
 self.addEventListener("fetch", (event) => {
-  // Pass through all requests directly to network - no caching
   event.respondWith(fetch(event.request))
 })
 
@@ -51,16 +49,13 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close()
-
   if (event.action === "complete") {
-    // Handle complete action
-    console.log("Task completed")
+    console.log("[SW] Task completed from notification")
   } else if (event.action === "snooze") {
-    // Handle snooze action
-    console.log("Task snoozed for 10 minutes")
+    console.log("[SW] Task snoozed from notification")
   } else {
     event.waitUntil(clients.openWindow("/"))
   }
 })
 
-console.log("[SW] Service worker loaded, version:", CACHE_NAME)
+console.log("[SW] Service Worker loaded successfully, version:", CACHE_NAME)
