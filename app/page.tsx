@@ -400,6 +400,9 @@ export default function LifeOS() {
           vendorCandidate: false,
           createdAt: t.created_at,
           dueAt: t.deadline,
+          energyLevel: t.energy_level || "medium",
+          priority: t.priority || "medium",
+          surveillance: t.deadline ? new Date(t.deadline) < new Date() : false,
         }))}
         onAction={handleCommandAction}
       />
