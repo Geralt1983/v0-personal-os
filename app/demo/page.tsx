@@ -260,6 +260,9 @@ export default function DemoMode() {
         vendorCandidate: false,
         createdAt: currentTask.created_at,
         dueAt: currentTask.deadline,
+        energyLevel: (currentTask.energy_level || "medium") as "peak" | "medium" | "low",
+        priority: (currentTask.priority || "medium") as "high" | "medium" | "low",
+        surveillance: currentTask.deadline ? new Date(currentTask.deadline) < new Date() : false,
       }
     : null
 
@@ -343,6 +346,9 @@ export default function DemoMode() {
           vendorCandidate: false,
           createdAt: t.created_at,
           dueAt: t.deadline,
+          energyLevel: (t.energy_level || "medium") as "peak" | "medium" | "low",
+          priority: (t.priority || "medium") as "high" | "medium" | "low",
+          surveillance: t.deadline ? new Date(t.deadline) < new Date() : false,
         }))}
         onAction={handleCommandAction}
       />
