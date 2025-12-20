@@ -80,7 +80,11 @@ export function TaskListView({
     <div className="min-h-screen bg-[#0a0f16] text-white pb-24">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+        <button
+          onClick={onBack}
+          aria-label="Go back"
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+        >
           <ArrowLeft size={20} />
           <span>Back</span>
         </button>
@@ -97,11 +101,13 @@ export function TaskListView({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tasks..."
+            aria-label="Search tasks"
             className="w-full pl-11 pr-10 py-3 rounded-xl bg-[#1a2332] border border-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
               className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
             >
               <X size={18} />
@@ -157,6 +163,7 @@ export function TaskListView({
       {/* FAB */}
       <motion.button
         onClick={onAddTask}
+        aria-label="Add new task"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className="fixed bottom-8 right-5 w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 z-50"
@@ -192,6 +199,7 @@ function TaskCard({
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggleComplete(task.id)}
+          aria-label={task.completed ? "Mark as incomplete" : "Mark as complete"}
           className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors flex-shrink-0 ${
             task.completed ? "bg-emerald-500 border-emerald-500" : "border-slate-600 hover:border-cyan-500"
           }`}
@@ -228,7 +236,11 @@ function TaskCard({
         </div>
 
         <div className="relative flex-shrink-0">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-slate-600 hover:text-slate-400 p-1">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Task options"
+            className="text-slate-600 hover:text-slate-400 p-1"
+          >
             <MoreVertical size={18} />
           </button>
 

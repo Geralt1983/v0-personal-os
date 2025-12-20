@@ -278,14 +278,24 @@ export function CompletionCelebration() {
     playSound(celebrationConfig.soundEffect, preferences.soundEnabled)
     triggerHaptic(preferences.hapticEnabled)
 
+    console.log(
+      "[v0] Celebration triggered, will auto-dismiss in",
+      celebrationConfig.confettiCount > 15 ? 2500 : 1800,
+      "ms",
+    )
+
     const timer = setTimeout(
       () => {
+        console.log("[v0] Auto-dismissing celebration")
         dismissCelebration()
       },
       celebrationConfig.confettiCount > 15 ? 2500 : 1800,
     )
 
-    return () => clearTimeout(timer)
+    return () => {
+      console.log("[v0] Cleaning up celebration timer")
+      clearTimeout(timer)
+    }
   }, [celebration.isVisible, getCelebrationConfig, dismissCelebration, preferences])
 
   return (
@@ -304,7 +314,8 @@ export function CompletionCelebration() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+            className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
+            onClick={dismissCelebration}
           >
             <motion.div
               initial={{ scale: 0, opacity: 0 }}

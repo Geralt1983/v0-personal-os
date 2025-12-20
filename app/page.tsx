@@ -128,16 +128,24 @@ export default function LifeOS() {
   }
 
   const handleToggleComplete = async (id: string) => {
+    console.log("[v0] handleToggleComplete called for task:", id)
     const task = allTasks.find((t) => t.id === id)
+    console.log("[v0] handleToggleComplete - task found:", task?.title, "completed:", task?.completed)
+
     if (!task) return
 
     if (task.completed) {
+      console.log("[v0] handleToggleComplete - marking as incomplete")
       await updateTask(id, { completed: false, completed_at: null })
     } else {
+      console.log("[v0] handleToggleComplete - marking as complete")
       await completeTask(id)
     }
+
+    console.log("[v0] handleToggleComplete - reloading tasks")
     await loadAllTasks()
-    refetch()
+    await refetch()
+    console.log("[v0] handleToggleComplete - tasks reloaded")
   }
 
   const handleDeleteTask = async (id: string) => {

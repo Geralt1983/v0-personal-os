@@ -12,17 +12,34 @@ const nextConfig = {
         source: "/:path*",
         headers: [
           {
+            key: "Content-Type",
+            value: "text/html; charset=utf-8",
+          },
+          {
             key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate",
+            value: "public, max-age=3600, must-revalidate",
           },
         ],
       },
       {
-        source: "/_next/:path*",
+        source: "/_next/static/:path*",
         headers: [
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/json; charset=utf-8",
+          },
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
           },
         ],
       },

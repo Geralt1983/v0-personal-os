@@ -71,31 +71,59 @@ export function useTasks() {
 
   const completeTask = useCallback(
     async (id: string) => {
+      console.log("[LifeOS] completeTask called with id:", id)
+
       const taskToComplete = tasks.find((t) => t.id === id)
+      console.log("[LifeOS] taskToComplete:", taskToComplete?.title || "NOT FOUND")
+
+      if (!taskToComplete) {
+        console.error("[LifeOS] Task not found in local state:", id)
+        return
+      }
+
       const previousTasks = [...tasks]
       const previousCurrentTask = currentTask
 
+      // Optimistic update - remove from UI immediately
       const remainingTasks = tasks.filter((t) => t.id !== id)
       setTasks(remainingTasks)
       setCurrentTask(remainingTasks[0] || null)
-
-      if (taskToComplete) {
-        incrementTasksCompleted()
-        triggerCelebration({
-          taskTitle: taskToComplete.title,
-          wasQuickWin: (taskToComplete.estimated_minutes || 25) <= 10,
-          wasOverdue: taskToComplete.deadline ? new Date(taskToComplete.deadline) < new Date() : false,
-        })
-      }
+      console.log("[LifeOS] Optimistic update done, remaining tasks:", remainingTasks.length)
 
       try {
+        // 1. First, update the database (most important)
+        console.log("[LifeOS] Updating Supabase...")
         const { error } = await supabase
           .from("tasks")
           .update({ completed: true, completed_at: new Date().toISOString() })
           .eq("id", id)
 
-        if (error) throw error
-        await updateStats("complete")
+        if (error) {
+          console.error("[LifeOS] Supabase update error:", error)
+          throw error
+        }
+        console.log("[LifeOS] Supabase update successful")
+
+        // 2. Update stats (important but not critical)
+        try {
+          await updateStats("complete")
+          console.log("[LifeOS] Stats updated")
+        } catch (statsError) {
+          console.error("[LifeOS] Stats update failed (non-critical):", statsError)
+        }
+
+        // 3. Trigger celebration (UI only, non-critical)
+        try {
+          incrementTasksCompleted()
+          triggerCelebration({
+            taskTitle: taskToComplete.title,
+            wasQuickWin: (taskToComplete.estimated_minutes || 25) <= 10,
+            wasOverdue: taskToComplete.deadline ? new Date(taskToComplete.deadline) < new Date() : false,
+          })
+          console.log("[LifeOS] Celebration triggered")
+        } catch (celebrationError) {
+          console.error("[LifeOS] Celebration failed (non-critical):", celebrationError)
+        }
       } catch (error) {
         console.error("[LifeOS] Complete failed, rolling back:", error)
         setTasks(previousTasks)
@@ -120,7 +148,7 @@ export function useTasks() {
         if (error) throw error
         await updateStats("skip")
       } catch (error) {
-        console.error("[LifeOS] Skip failed, rolling back:", error)
+        console.error("[LifeOS] Skip failed:", error)
         setTasks(previousTasks)
         setCurrentTask(previousCurrentTask)
       }
