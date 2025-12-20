@@ -30,7 +30,6 @@ export async function scheduleReminder(task: string, time: Date): Promise<void> 
         body: task,
         icon: "/icons/icon-192.jpg",
         tag: "reminder",
-        vibrate: [200, 100, 200],
       })
     }, delay)
   } else {
@@ -63,7 +62,6 @@ export async function scheduleNotification(task: string, time: Date): Promise<vo
         body: task,
         icon: "/icons/icon-192.jpg",
         tag: "reminder",
-        vibrate: [200, 100, 200],
       })
     }, delay)
   } else {

@@ -22,12 +22,19 @@ export interface Task {
   daysOverdue?: number
   context?: string
   eta?: string
+  etaMinutes?: number
   friction?: "low" | "medium" | "high"
   bestTime?: BestTimeBucket
   status: "pending" | "done" | "delegated" | "deleted"
   quickWin?: boolean
   delegateCandidate?: boolean
   vendorCandidate?: boolean
+  expiresAt?: Date
+  aiRecommendation?: string
+  aiTags?: string[]
+  patternMatch?: string
+  microMoves?: string[]
+  isHireOutCandidate?: boolean
 }
 
 export interface Reasoning {
@@ -49,6 +56,24 @@ export interface SubTask {
   title: string
   estimatedMinutes: number
   completed: boolean
+}
+
+export interface Suggestion {
+  id: string
+  text: string
+  actionLabel: string
+}
+
+export interface TaskAnalysis {
+  rewrittenTitle: string
+  context: string
+  tags: string[]
+  friction: "low" | "medium" | "high"
+  bestTime: BestTimeBucket
+  etaMinutes: number
+  quickWin: boolean
+  vendorCandidate: boolean
+  delegateCandidate: boolean
 }
 
 export function calculateTaskScore(task: Task): number {

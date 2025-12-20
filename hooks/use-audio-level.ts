@@ -5,7 +5,7 @@ import { useRef, useState } from "react"
 export function useAudioLevel() {
   const [audioLevel, setAudioLevel] = useState(0)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | undefined>(undefined)
   const audioContextRef = useRef<AudioContext | null>(null)
 
   const startAnalyser = async (stream: MediaStream) => {

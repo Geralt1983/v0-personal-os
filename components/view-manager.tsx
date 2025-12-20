@@ -22,8 +22,8 @@ interface ViewManagerProps {
   onCantDo: () => void
   onNavigate: (view: View) => void
   onAddTask: () => void
-  onToggleComplete: (id: string) => void
-  onDeleteTask: (id: string) => void
+  onToggleComplete: (id: string) => Promise<void>
+  onDeleteTask: (id: string) => Promise<void>
   onEditTask: (task: any) => void
   onOpenMenuDrawer: () => void
   onOpenVoiceReminder: () => void
