@@ -285,6 +285,21 @@ export default function DemoMode() {
     .map((t) => ({
       id: t.id,
       title: t.title,
+      status: "pending" as const,
+      context: "Work" as const,
+      tags: [],
+      estimatedMinutes: t.estimated_minutes || 25,
+      bestTime: "now" as const,
+      friction: "medium" as const,
+      size: "medium" as const,
+      quickWin: false,
+      delegateCandidate: false,
+      vendorCandidate: false,
+      createdAt: t.created_at,
+      dueAt: t.deadline,
+      energyLevel: (t.energy_level || "medium") as "peak" | "medium" | "low",
+      priority: (t.priority || "medium") as "high" | "medium" | "low",
+      surveillance: true,
       daysOverdue: Math.floor((Date.now() - new Date(t.deadline!).getTime()) / (1000 * 60 * 60 * 24)),
     }))
 
