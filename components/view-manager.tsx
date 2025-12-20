@@ -143,6 +143,9 @@ export function ViewManager({
       vendorCandidate: false,
       createdAt: currentTask.created_at,
       dueAt: currentTask.deadline,
+      energyLevel: (currentTask.energy_level || "medium") as "peak" | "medium" | "low",
+      priority: (currentTask.priority || "medium") as "high" | "medium" | "low",
+      surveillance: currentTask.deadline ? new Date(currentTask.deadline) < new Date() : false,
     }
 
     return (
