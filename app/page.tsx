@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-
+import { useState, useRef } from "react"
 import { useEffect } from "react"
 import { ViewManager } from "@/components/view-manager"
 import { CommandPalette } from "@/components/command-palette"
@@ -55,6 +54,8 @@ export default function LifeOS() {
   const router = useRouter()
   const supabase = createClient()
 
+  const processingTasksRef = useRef<Set<string>>(new Set())
+
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -94,7 +95,20 @@ export default function LifeOS() {
 
   const handleComplete = async () => {
     if (!currentTask) return
-    await completeTask(currentTask.id)
+
+    if (processingTasksRef.current.has(currentTask.id)) {
+      console.log("[v0] handleComplete - task already being processed, skipping")
+      return
+    }
+
+    processingTasksRef.current.add(currentTask.id)
+    try {
+      await completeTask(currentTask.id)
+    } finally {
+      setTimeout(() => {
+        processingTasksRef.current.delete(currentTask.id)
+      }, 1000)
+    }
   }
 
   const handleAddVoiceTask = async (taskTitle: string, date?: string, time?: string) => {
@@ -129,23 +143,53 @@ export default function LifeOS() {
 
   const handleToggleComplete = async (id: string) => {
     console.log("[v0] handleToggleComplete called for task:", id)
+
+    if (processingTasksRef.current.has(id)) {
+      console.log("[v0] handleToggleComplete - task already being processed, skipping duplicate call")
+      return
+    }
+
     const task = allTasks.find((t) => t.id === id)
     console.log("[v0] handleToggleComplete - task found:", task?.title, "completed:", task?.completed)
 
-    if (!task) return
-
-    if (task.completed) {
-      console.log("[v0] handleToggleComplete - marking as incomplete")
-      await updateTask(id, { completed: false, completed_at: null })
-    } else {
-      console.log("[v0] handleToggleComplete - marking as complete")
-      await completeTask(id)
+    if (!task) {
+      console.log("[v0] handleToggleComplete - task not found in allTasks")
+      return
     }
 
-    console.log("[v0] handleToggleComplete - reloading tasks")
-    await loadAllTasks()
-    await refetch()
-    console.log("[v0] handleToggleComplete - tasks reloaded")
+    processingTasksRef.current.add(id)
+    console.log("[v0] handleToggleComplete - marked as processing")
+
+    try {
+      if (task.completed) {
+        console.log("[v0] handleToggleComplete - marking as incomplete")
+        await updateTask(id, { completed: false, completed_at: null })
+      } else {
+        console.log("[v0] handleToggleComplete - marking as complete")
+        await completeTask(id)
+      }
+
+      setAllTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, completed: !task.completed, completed_at: task.completed ? null : new Date().toISOString() }
+            : t,
+        ),
+      )
+      console.log("[v0] handleToggleComplete - local state updated")
+
+      console.log("[v0] handleToggleComplete - triggering background refetch")
+      loadAllTasks()
+      refetch()
+      console.log("[v0] handleToggleComplete - refetch triggered")
+    } catch (error) {
+      console.error("[v0] handleToggleComplete - error:", error)
+    } finally {
+      setTimeout(() => {
+        processingTasksRef.current.delete(id)
+        console.log("[v0] handleToggleComplete - removed from processing set")
+      }, 1500)
+    }
   }
 
   const handleDeleteTask = async (id: string) => {
