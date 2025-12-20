@@ -91,18 +91,40 @@ export function useTasks() {
       console.log("[LifeOS] Optimistic update done, remaining tasks:", remainingTasks.length)
 
       try {
-        // 1. First, update the database (most important)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          throw new Error("No authenticated user found")
+        }
+
+        console.log("[LifeOS] Current user ID:", user.id)
+        console.log("[LifeOS] Task user_id:", taskToComplete.user_id)
+
         console.log("[LifeOS] Updating Supabase...")
-        const { error } = await supabase
+        const { data: updatedTask, error } = await supabase
           .from("tasks")
           .update({ completed: true, completed_at: new Date().toISOString() })
           .eq("id", id)
+          .select()
+          .single()
 
         if (error) {
           console.error("[LifeOS] Supabase update error:", error)
           throw error
         }
-        console.log("[LifeOS] Supabase update successful")
+
+        if (!updatedTask) {
+          console.error("[LifeOS] WARNING: Update returned no rows! RLS policy may be blocking the update.")
+          console.error("[LifeOS] Task ID:", id)
+          console.error("[LifeOS] Current user:", user.id)
+          console.error("[LifeOS] Task user_id:", taskToComplete.user_id)
+          throw new Error("Update returned no rows - RLS policy may be blocking")
+        }
+
+        console.log("[LifeOS] Supabase update VERIFIED - task is now completed:", updatedTask.completed)
+        console.log("[LifeOS] Updated task data:", updatedTask)
 
         // 2. Update stats (important but not critical)
         try {
