@@ -11,13 +11,14 @@ import { TaskListView } from "@/components/task-list-view"
 import { AddTaskForm } from "@/components/add-task-form"
 import { SettingsScreen } from "@/components/settings-screen"
 import { MenuDrawer } from "@/components/menu-drawer"
+import type { Task } from "@/hooks/use-tasks"
 
 type View = "task" | "dashboard" | "settings" | "taskList"
 
-// Demo mock data
-const DEMO_TASKS = [
+const DEMO_TASKS: Task[] = [
   {
     id: "demo-1",
+    user_id: "demo-user",
     title: "Review quarterly report",
     description: "Go through the Q4 financials",
     priority: "high",
@@ -26,10 +27,13 @@ const DEMO_TASKS = [
     deadline: new Date(Date.now() + 86400000).toISOString(),
     completed: false,
     skipped: false,
+    position: 0,
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
   {
     id: "demo-2",
+    user_id: "demo-user",
     title: "Schedule dentist appointment",
     description: "Call Dr. Smith's office",
     priority: "medium",
@@ -38,19 +42,24 @@ const DEMO_TASKS = [
     deadline: new Date(Date.now() + 172800000).toISOString(),
     completed: false,
     skipped: false,
+    position: 1,
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
   {
     id: "demo-3",
+    user_id: "demo-user",
     title: "Fix leaky faucet",
     description: "Kitchen sink has been dripping",
     priority: "low",
     energy_level: "medium",
     estimated_minutes: 30,
-    deadline: null,
+    deadline: undefined,
     completed: false,
     skipped: false,
+    position: 2,
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
 ]
 
@@ -59,9 +68,9 @@ export default function DemoMode() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [voiceReminderOpen, setVoiceReminderOpen] = useState(false)
   const [addTaskFormOpen, setAddTaskFormOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<any>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false)
-  const [tasks, setTasks] = useState(DEMO_TASKS)
+  const [tasks, setTasks] = useState<Task[]>(DEMO_TASKS)
   const [stats, setStats] = useState({ current_streak: 7, trust_score: 82 })
 
   const pendingTasks = tasks.filter((t) => !t.completed && !t.skipped)
@@ -96,28 +105,36 @@ export default function DemoMode() {
     setTasks((prev) => prev.map((t) => (t.id === currentTask.id ? { ...t, skipped: true, skip_reason: reason } : t)))
   }
 
-  const handleAddTask = async (taskData: any) => {
-    const newTask = {
+  const handleAddTask = async (taskData: Partial<Task>) => {
+    const newTask: Task = {
       id: `demo-${Date.now()}`,
-      ...taskData,
+      user_id: "demo-user",
+      title: taskData.title || "New Task",
+      description: taskData.description,
+      priority: taskData.priority || "medium",
+      energy_level: taskData.energy_level || "medium",
+      estimated_minutes: taskData.estimated_minutes || 25,
+      deadline: taskData.deadline,
       completed: false,
       skipped: false,
+      position: tasks.length,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
     setTasks((prev) => [...prev, newTask])
     setAddTaskFormOpen(false)
     setEditingTask(null)
   }
 
-  const handleToggleComplete = (id: string) => {
+  const handleToggleComplete = async (id: string) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)))
   }
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task)
     setAddTaskFormOpen(true)
   }
