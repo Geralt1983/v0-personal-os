@@ -169,21 +169,23 @@ export default function LifeOS() {
         await completeTask(id)
       }
 
+      const newCompletedState = !task.completed
       setAllTasks((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, completed: !task.completed, completed_at: task.completed ? null : new Date().toISOString() }
+            ? { ...t, completed: newCompletedState, completed_at: newCompletedState ? new Date().toISOString() : null }
             : t,
         ),
       )
-      console.log("[v0] handleToggleComplete - local state updated")
+      console.log("[v0] handleToggleComplete - local state updated, completed:", newCompletedState)
 
-      console.log("[v0] handleToggleComplete - triggering background refetch")
-      loadAllTasks()
       refetch()
-      console.log("[v0] handleToggleComplete - refetch triggered")
+      console.log("[v0] handleToggleComplete - useTasks refetch triggered (no loadAllTasks)")
     } catch (error) {
       console.error("[v0] handleToggleComplete - error:", error)
+      setAllTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, completed: task.completed, completed_at: task.completed_at } : t)),
+      )
     } finally {
       setTimeout(() => {
         processingTasksRef.current.delete(id)
