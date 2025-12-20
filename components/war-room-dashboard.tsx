@@ -2,13 +2,19 @@
 
 import { motion } from "framer-motion"
 import { ArrowLeft, Flame, Zap, Target, Clock, AlertTriangle, TrendingUp } from "lucide-react"
-import type { Task, UserStats } from "@/lib/types"
+import type { UserStats } from "@/lib/types"
+
+interface SurveillanceTask {
+  id: string
+  title: string
+  daysOverdue: number
+}
 
 interface WarRoomDashboardProps {
   stats: UserStats
-  surveillanceTasks: Task[]
+  surveillanceTasks: SurveillanceTask[]
   onBack: () => void
-  onTaskSelect: (task: Task) => void
+  onTaskSelect: (task: SurveillanceTask) => void
 }
 
 export function WarRoomDashboard({ stats, surveillanceTasks, onBack, onTaskSelect }: WarRoomDashboardProps) {
@@ -92,7 +98,7 @@ export function WarRoomDashboard({ stats, surveillanceTasks, onBack, onTaskSelec
           <div className="space-y-3">
             {surveillanceTasks.map((task, index) => {
               const isOverdue = task.daysOverdue && task.daysOverdue > 0
-              const isUrgent = isOverdue && task.daysOverdue! >= 2
+              const isUrgent = isOverdue && task.daysOverdue >= 2
 
               return (
                 <motion.div
