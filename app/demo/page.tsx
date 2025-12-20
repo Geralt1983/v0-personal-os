@@ -96,7 +96,7 @@ export default function DemoMode() {
     setTasks((prev) => prev.map((t) => (t.id === currentTask.id ? { ...t, skipped: true, skip_reason: reason } : t)))
   }
 
-  const handleAddTask = (taskData: any) => {
+  const handleAddTask = async (taskData: any) => {
     const newTask = {
       id: `demo-${Date.now()}`,
       ...taskData,
