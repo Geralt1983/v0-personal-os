@@ -275,6 +275,9 @@ export default function DemoMode() {
   const userStats = {
     currentStreak: stats.current_streak,
     trustScore: stats.trust_score,
+    weeklyCompletionRate: 75,
+    energyAccuracy: 80,
+    avgCompletionTime: 22,
   }
 
   const surveillanceTasks = tasks
