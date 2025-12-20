@@ -181,7 +181,7 @@ export default function LifeOS() {
     try {
       if (task.completed) {
         console.log("[v0] handleToggleComplete - marking as incomplete")
-        await updateTask(id, { completed: false, completed_at: null })
+        await updateTask(id, { completed: false, completed_at: undefined })
       } else {
         console.log("[v0] handleToggleComplete - marking as complete")
         await completeTask(id)
@@ -191,7 +191,11 @@ export default function LifeOS() {
       setAllTasks((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, completed: newCompletedState, completed_at: newCompletedState ? new Date().toISOString() : null }
+            ? {
+                ...t,
+                completed: newCompletedState,
+                completed_at: newCompletedState ? new Date().toISOString() : undefined,
+              }
             : t,
         ),
       )
