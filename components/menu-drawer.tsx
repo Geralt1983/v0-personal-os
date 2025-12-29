@@ -1,29 +1,18 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Home, SettingsIcon, List, LogOut, ListTodo, Plus } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { X, Home, SettingsIcon, List, ListTodo, Plus, Repeat } from "lucide-react"
 
 const MENU_VERSION = "v2.1"
 
 interface MenuDrawerProps {
   isOpen: boolean
   onClose: () => void
-  onNavigate: (view: "task" | "dashboard" | "settings" | "taskList") => void
+  onNavigate: (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => void
   onAddTask?: () => void
 }
 
 export function MenuDrawer({ isOpen, onClose, onNavigate, onAddTask }: MenuDrawerProps) {
-  const router = useRouter()
-  const supabase = createClient()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/auth/login")
-    router.refresh()
-  }
-
   const menuItems = [
     {
       id: "task",
@@ -49,6 +38,15 @@ export function MenuDrawer({ isOpen, onClose, onNavigate, onAddTask }: MenuDrawe
       icon: <ListTodo className="w-5 h-5 text-blue-400" />,
       onClick: () => {
         onNavigate("taskList")
+        onClose()
+      },
+    },
+    {
+      id: "habits",
+      label: "Habits",
+      icon: <Repeat className="w-5 h-5 text-violet-400" />,
+      onClick: () => {
+        onNavigate("habits")
         onClose()
       },
     },
@@ -115,18 +113,7 @@ export function MenuDrawer({ isOpen, onClose, onNavigate, onAddTask }: MenuDrawe
               ))}
             </nav>
 
-            {/* Sign Out */}
-            <div className="pt-4 border-t border-slate-700/50">
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 transition-colors text-left group"
-              >
-                <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300" />
-                <span className="text-red-400 group-hover:text-red-300">Sign Out</span>
-              </button>
-            </div>
-
-            <div className="mt-4 text-center">
+            <div className="pt-4 border-t border-slate-700/50 text-center">
               <span className="text-xs text-slate-600">{MENU_VERSION}</span>
             </div>
           </motion.div>

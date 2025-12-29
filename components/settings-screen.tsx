@@ -24,19 +24,14 @@ import {
   HelpCircle,
   Send,
   FileText,
-  LogOut,
   ChevronRight,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
 
 interface SettingsScreenProps {
   onBack: () => void
-  isDemo?: boolean
 }
 
-export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) {
-  const [userEmail, setUserEmail] = useState("")
+export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [autoStartBreaks, setAutoStartBreaks] = useState(false)
   const [showTrustScore, setShowTrustScore] = useState(true)
   const [showStreak, setShowStreak] = useState(true)
@@ -46,22 +41,8 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
   const [hapticEnabled, setHapticEnabled] = useState(true)
   const [confettiEnabled, setConfettiEnabled] = useState(true)
 
-  const supabase = createClient()
-  const router = useRouter()
-
   useEffect(() => {
-    const loadSettings = async () => {
-      if (!isDemo) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (user) {
-          setUserEmail(user.email || "")
-        }
-      } else {
-        setUserEmail("demo@lifeos.app")
-      }
-
+    const loadSettings = () => {
       // Load settings from localStorage
       const savedAutoBreaks = localStorage.getItem("autoStartBreaks")
       const savedShowTrust = localStorage.getItem("showTrustScore")
@@ -83,17 +64,7 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
     }
 
     loadSettings()
-  }, [isDemo])
-
-  const handleSignOut = async () => {
-    if (isDemo) {
-      localStorage.removeItem("lifeos_demo_mode")
-      router.push("/auth/login")
-    } else {
-      await supabase.auth.signOut()
-      router.push("/auth/login")
-    }
-  }
+  }, [])
 
   const handleToggle = (key: string, value: boolean) => {
     localStorage.setItem(key, value.toString())
@@ -235,17 +206,6 @@ export function SettingsScreen({ onBack, isDemo = false }: SettingsScreenProps) 
           <SettingsRow icon={<FileText size={20} />} label="Privacy Policy" onClick={() => {}} />
           <SettingsRow icon={<FileText size={20} />} label="Terms of Service" onClick={() => {}} />
         </SettingsSection>
-
-        {/* Sign Out */}
-        <div className="pt-4">
-          <button
-            onClick={handleSignOut}
-            className="w-full p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-medium flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors"
-          >
-            <LogOut size={18} />
-            {isDemo ? "Exit Demo" : "Sign Out"}
-          </button>
-        </div>
 
         {/* Version */}
         <div className="text-center text-slate-600 pt-6">

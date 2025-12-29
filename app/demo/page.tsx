@@ -11,9 +11,10 @@ import { TaskListView } from "@/components/task-list-view"
 import { AddTaskForm } from "@/components/add-task-form"
 import { SettingsScreen } from "@/components/settings-screen"
 import { MenuDrawer } from "@/components/menu-drawer"
+import { HabitsView } from "@/components/habits-view"
 import type { Task } from "@/hooks/use-tasks"
 
-type View = "task" | "dashboard" | "settings" | "taskList"
+type View = "task" | "dashboard" | "settings" | "taskList" | "habits"
 
 const DEMO_TASKS: Task[] = [
   {
@@ -361,7 +362,9 @@ export default function DemoMode() {
         />
       )}
 
-      {view === "settings" && <SettingsScreen onBack={() => setView("task")} isDemo />}
+      {view === "settings" && <SettingsScreen onBack={() => setView("task")} />}
+
+      {view === "habits" && <HabitsView onBack={() => setView("task")} />}
 
       <CommandPalette
         isOpen={commandPaletteOpen}

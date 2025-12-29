@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { smartSortTasks, type ScoredTask } from "@/lib/smart-sort"
 import { useAppStore } from "@/lib/stores/app-store"
+import { PERSONAL_USER_ID } from "@/lib/constants"
 
 export interface Task {
   id: string
@@ -32,18 +33,10 @@ export function useTasks() {
   const { userEnergyLevel, triggerCelebration, incrementTasksCompleted } = useAppStore()
 
   const fetchTasks = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setLoading(false)
-      return
-    }
-
     const { data } = await supabase
       .from("tasks")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", PERSONAL_USER_ID)
       .eq("completed", false)
       .eq("skipped", false)
       .order("position", { ascending: true })
@@ -91,17 +84,6 @@ export function useTasks() {
       console.log("[LifeOS] Optimistic update done, remaining tasks:", remainingTasks.length)
 
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (!user) {
-          throw new Error("No authenticated user found")
-        }
-
-        console.log("[LifeOS] Current user ID:", user.id)
-        console.log("[LifeOS] Task user_id:", taskToComplete.user_id)
-
         console.log("[LifeOS] Updating Supabase...")
         const { data: updatedTask, error } = await supabase
           .from("tasks")
@@ -116,11 +98,9 @@ export function useTasks() {
         }
 
         if (!updatedTask) {
-          console.error("[LifeOS] WARNING: Update returned no rows! RLS policy may be blocking the update.")
+          console.error("[LifeOS] WARNING: Update returned no rows!")
           console.error("[LifeOS] Task ID:", id)
-          console.error("[LifeOS] Current user:", user.id)
-          console.error("[LifeOS] Task user_id:", taskToComplete.user_id)
-          throw new Error("Update returned no rows - RLS policy may be blocking")
+          throw new Error("Update returned no rows")
         }
 
         console.log("[LifeOS] Supabase update VERIFIED - task is now completed:", updatedTask.completed)
@@ -180,22 +160,11 @@ export function useTasks() {
 
   const addTask = useCallback(
     async (task: Partial<Task>) => {
-      console.log("[v0] addTask called with:", task)
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      console.log("[v0] addTask - user:", user?.id || "NO USER")
-
-      if (!user) {
-        console.log("[v0] addTask - No user found, returning null")
-        return null
-      }
+      console.log("[LifeOS] addTask called with:", task)
 
       try {
         const insertData = {
-          user_id: user.id,
+          user_id: PERSONAL_USER_ID,
           title: task.title,
           description: task.description || null,
           energy_level: task.energy_level || "medium",
@@ -274,27 +243,17 @@ export function useTasks() {
   )
 
   const getAllTasks = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return []
-
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", PERSONAL_USER_ID)
       .order("created_at", { ascending: false })
 
     return data || []
   }
 
   const updateStats = async (action: "complete" | "skip") => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: stats } = await supabase.from("user_stats").select("*").eq("user_id", user.id).single()
+    const { data: stats } = await supabase.from("user_stats").select("*").eq("user_id", PERSONAL_USER_ID).single()
 
     if (!stats) return
 
@@ -319,7 +278,7 @@ export function useTasks() {
       updated_at: new Date().toISOString(),
     }
 
-    await supabase.from("user_stats").update(updates).eq("user_id", user.id)
+    await supabase.from("user_stats").update(updates).eq("user_id", PERSONAL_USER_ID)
   }
 
   return {

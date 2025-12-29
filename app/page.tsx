@@ -9,7 +9,6 @@ import { Mic, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useTasks } from "@/hooks/use-tasks"
 import { useUserStats } from "@/hooks/use-user-stats"
-import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { AddTaskForm } from "@/components/add-task-form"
 import { MenuDrawer } from "@/components/menu-drawer"
@@ -52,21 +51,8 @@ export default function LifeOS() {
   const { isStuck, stuckInfo, recordSkip } = useStuckDetection(currentTask?.id)
   const { shouldShowPlanning, completePlanning, dismissPlanning } = useDailyPlanning()
   const router = useRouter()
-  const supabase = createClient()
 
   const processingTasksRef = useRef<Set<string>>(new Set())
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/auth/login")
-      }
-    }
-    checkAuth()
-  }, [router, supabase])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

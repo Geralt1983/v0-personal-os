@@ -2,7 +2,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createClient } from "@/lib/supabase/client"
 
-export type View = "task" | "dashboard" | "settings" | "taskList"
+export type View = "task" | "dashboard" | "settings" | "taskList" | "habits"
 export type EnergyLevel = "peak" | "medium" | "low"
 export type AITone = "encouraging" | "stoic" | "urgent"
 

@@ -4,11 +4,12 @@ import { SingleTaskView } from "./single-task-view"
 import { WarRoomDashboard } from "./war-room-dashboard"
 import { TaskListView } from "./task-list-view"
 import { SettingsScreen } from "./settings-screen"
+import { HabitsView } from "./habits-view"
 import { Mic, Menu, Plus, ListTodo } from "lucide-react"
 import type { Task } from "@/hooks/use-tasks"
 import type { Reasoning, UserStats } from "@/lib/types"
 
-type View = "task" | "dashboard" | "settings" | "taskList"
+type View = "task" | "dashboard" | "settings" | "taskList" | "habits"
 
 interface ViewManagerProps {
   currentView: View
@@ -98,7 +99,7 @@ export function ViewManager({
   }
 
   // Non-task views without current task
-  if (!currentTask && (currentView === "taskList" || currentView === "settings" || currentView === "dashboard")) {
+  if (!currentTask && (currentView === "taskList" || currentView === "settings" || currentView === "dashboard" || currentView === "habits")) {
     return (
       <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16]">
         {currentView === "taskList" && (
@@ -122,6 +123,8 @@ export function ViewManager({
             onTaskSelect={() => onNavigate("task")}
           />
         )}
+
+        {currentView === "habits" && <HabitsView onBack={() => onNavigate("task")} />}
       </div>
     )
   }
@@ -183,6 +186,8 @@ export function ViewManager({
         )}
 
         {currentView === "settings" && <SettingsScreen onBack={() => onNavigate("task")} />}
+
+        {currentView === "habits" && <HabitsView onBack={() => onNavigate("task")} />}
       </div>
     )
   }

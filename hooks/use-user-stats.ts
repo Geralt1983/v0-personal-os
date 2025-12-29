@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { PERSONAL_USER_ID } from "@/lib/constants"
 
 export interface UserStats {
   user_id: string
@@ -44,12 +45,7 @@ export function useUserStats() {
   }, [])
 
   const fetchStats = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data } = await supabase.from("user_stats").select("*").eq("user_id", user.id).single()
+    const { data } = await supabase.from("user_stats").select("*").eq("user_id", PERSONAL_USER_ID).single()
 
     setStats(data)
     setLoading(false)
