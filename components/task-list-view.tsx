@@ -63,7 +63,7 @@ export function TaskListView({
         })
 
       if (!groups[groupKey]) groups[groupKey] = []
-      groups[groupKey].push(task)
+      groups[groupKey]!.push(task)
     })
 
     return groups

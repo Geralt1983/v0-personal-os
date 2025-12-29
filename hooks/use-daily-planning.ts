@@ -22,6 +22,7 @@ export function useDailyPlanning() {
     if (savedEnergy) {
       setUserEnergyLevel(savedEnergy as "peak" | "medium" | "low")
     }
+    return undefined
   }, [])
 
   const completePlanning = (energyLevel: "peak" | "medium" | "low") => {

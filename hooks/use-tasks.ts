@@ -243,7 +243,7 @@ export function useTasks() {
   )
 
   const getAllTasks = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("tasks")
       .select("*")
       .eq("user_id", PERSONAL_USER_ID)

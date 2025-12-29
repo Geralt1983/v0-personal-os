@@ -32,7 +32,6 @@ interface ViewManagerProps {
 
 export function ViewManager({
   currentView,
-  tasks,
   currentTask,
   stats,
   reasoning,

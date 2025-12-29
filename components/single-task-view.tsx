@@ -17,7 +17,7 @@ interface SingleTaskViewProps {
   stats: UserStats
   onComplete: () => void
   onCantDo: () => void
-  onNavigate?: (view: "task" | "dashboard" | "settings" | "taskList") => void
+  onNavigate?: (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => void
   onAddTask?: () => void
 }
 
@@ -26,7 +26,6 @@ export function SingleTaskView({
   reasoning,
   stats,
   onComplete,
-  onCantDo,
   onNavigate,
   onAddTask,
 }: SingleTaskViewProps) {
@@ -86,7 +85,7 @@ export function SingleTaskView({
     setDefaultTimerMinutes(minutes)
   }
 
-  const handleNavigate = (view: "task" | "dashboard" | "settings" | "taskList") => {
+  const handleNavigate = (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => {
     console.log("[v0] SingleTaskView handleNavigate:", view)
     setShowMenuDrawer(false)
     if (onNavigate) {
@@ -266,7 +265,7 @@ export function SingleTaskView({
           <AiDialogueModal
             task={task}
             onClose={() => setShowAiDialog(false)}
-            onSelectSubtask={(subtask) => {
+            onSelectSubtask={() => {
               setShowAiDialog(false)
             }}
           />

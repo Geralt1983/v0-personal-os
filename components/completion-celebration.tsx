@@ -305,7 +305,7 @@ export function CompletionCelebration() {
           {showConfetti && (
             <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {Array.from({ length: config.confettiCount }).map((_, i) => (
-                <ConfettiParticle key={i} delay={i * 0.05} color={confettiColors[i % confettiColors.length]} />
+                <ConfettiParticle key={i} delay={i * 0.05} color={confettiColors[i % confettiColors.length] ?? "#00d4ff"} />
               ))}
             </div>
           )}

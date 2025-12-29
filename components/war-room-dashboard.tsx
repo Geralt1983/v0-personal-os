@@ -17,7 +17,7 @@ interface WarRoomDashboardProps {
   onTaskSelect: (task: SurveillanceTask) => void
 }
 
-export function WarRoomDashboard({ stats, surveillanceTasks, onBack, onTaskSelect }: WarRoomDashboardProps) {
+export function WarRoomDashboard({ stats, surveillanceTasks, onBack }: WarRoomDashboardProps) {
   const mockWeekData = [
     { name: "M", completed: 4, total: 4 },
     { name: "T", completed: 3, total: 3 },

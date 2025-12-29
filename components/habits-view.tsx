@@ -144,7 +144,7 @@ export function HabitsView({ onBack }: HabitsViewProps) {
                     onClick={() => {
                       const icons = ["🎯", "💪", "📚", "🧘", "🏃", "💧", "🌅", "✍️", "🎨", "🎵"]
                       const currentIndex = icons.indexOf(newHabitIcon)
-                      setNewHabitIcon(icons[(currentIndex + 1) % icons.length])
+                      setNewHabitIcon(icons[(currentIndex + 1) % icons.length] ?? "🎯")
                     }}
                     className="w-14 h-14 rounded-xl bg-slate-700 flex items-center justify-center text-2xl hover:bg-slate-600 transition-colors"
                   >

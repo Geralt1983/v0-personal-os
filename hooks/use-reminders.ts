@@ -12,7 +12,7 @@ export function useReminders() {
     } = await supabase.auth.getUser()
     if (!user) return null
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("reminders")
       .insert({
         user_id: user.id,

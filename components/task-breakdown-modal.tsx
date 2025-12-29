@@ -292,7 +292,10 @@ export function TaskBreakdownModal({
                     Save all as separate tasks
                   </button>
                   <button
-                    onClick={() => onReplaceWithFirst(steps[0])}
+                    onClick={() => {
+                      const firstStep = steps[0]
+                      if (firstStep) onReplaceWithFirst(firstStep)
+                    }}
                     className="flex-1 py-3 rounded-xl bg-white/5 text-slate-300 text-sm hover:bg-white/10 transition-colors"
                   >
                     Just do step 1 today

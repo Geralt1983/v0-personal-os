@@ -37,16 +37,14 @@ export default function LifeOS() {
     tasks,
     loading: tasksLoading,
     completeTask,
-    skipTask,
     addTask,
     deleteTask,
     updateTask,
     getAllTasks,
-    resortForEnergy,
     refetch,
   } = useTasks()
   const { stats, loading: statsLoading } = useUserStats()
-  const { isStuck, stuckInfo, recordSkip } = useStuckDetection(currentTask?.id)
+  const { stuckInfo } = useStuckDetection(currentTask?.id)
   const { shouldShowPlanning, completePlanning, dismissPlanning } = useDailyPlanning()
 
   const processingTasksRef = useRef<Set<string>>(new Set())
@@ -303,7 +301,7 @@ export default function LifeOS() {
         onClose={dismissPlanning}
         tasks={tasks}
         onSetEnergyLevel={(level) => completePlanning(level)}
-        onStartDay={(topTasks) => {
+        onStartDay={() => {
           completePlanning(userEnergyLevel || "medium")
         }}
       />
@@ -323,7 +321,7 @@ export default function LifeOS() {
           if (currentTask) await deleteTask(currentTask.id)
           closeModal("stuckTask")
         }}
-        onKeep={(reason) => closeModal("stuckTask")}
+        onKeep={() => closeModal("stuckTask")}
       />
 
       <TaskBreakdownModal

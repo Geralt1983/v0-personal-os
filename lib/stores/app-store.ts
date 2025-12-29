@@ -237,7 +237,7 @@ export const useAppStore = create<AppState>()(
 
       // Celebration Actions
       triggerCelebration: (ctx) =>
-        set((state) => ({
+        set(() => ({
           celebration: {
             isVisible: true,
             wasQuickWin: ctx.wasQuickWin ?? false,

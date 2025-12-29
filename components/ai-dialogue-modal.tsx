@@ -163,7 +163,10 @@ export function AiDialogueModal({ task, onClose, onSelectSubtask }: AiDialogueMo
 
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <motion.button
-                  onClick={() => onSelectSubtask(breakdownSubtasks[0])}
+                  onClick={() => {
+                    const firstSubtask = breakdownSubtasks[0]
+                    if (firstSubtask) onSelectSubtask(firstSubtask)
+                  }}
                   className="py-3 rounded-xl gradient-success text-bg-base font-medium text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
