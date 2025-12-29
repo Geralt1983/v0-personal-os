@@ -9,7 +9,6 @@ import { Mic, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useTasks } from "@/hooks/use-tasks"
 import { useUserStats } from "@/hooks/use-user-stats"
-import { useRouter } from "next/navigation"
 import { AddTaskForm } from "@/components/add-task-form"
 import { MenuDrawer } from "@/components/menu-drawer"
 import { generateTaskReasoning } from "@/lib/generate-reasoning"
@@ -27,7 +26,6 @@ export default function LifeOS() {
     modals,
     editingTask,
     userEnergyLevel,
-    setView,
     openModal,
     closeModal,
     setEditingTask,
@@ -50,7 +48,6 @@ export default function LifeOS() {
   const { stats, loading: statsLoading } = useUserStats()
   const { isStuck, stuckInfo, recordSkip } = useStuckDetection(currentTask?.id)
   const { shouldShowPlanning, completePlanning, dismissPlanning } = useDailyPlanning()
-  const router = useRouter()
 
   const processingTasksRef = useRef<Set<string>>(new Set())
 
