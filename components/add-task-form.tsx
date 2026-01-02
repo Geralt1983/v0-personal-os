@@ -180,15 +180,15 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
   ]
 
   const priorityOptions = [
-    { value: "high" as const, label: "High", icon: <AlertCircle className="w-4 h-4" />, color: "red" },
-    { value: "medium" as const, label: "Medium", icon: <Target className="w-4 h-4" />, color: "amber" },
-    { value: "low" as const, label: "Low", icon: <Sparkles className="w-4 h-4" />, color: "emerald" },
+    { value: "high" as const, label: "High", icon: <AlertCircle className="w-3.5 h-3.5" />, color: "red" },
+    { value: "medium" as const, label: "Medium", icon: <Target className="w-3.5 h-3.5" />, color: "amber" },
+    { value: "low" as const, label: "Low", icon: <Sparkles className="w-3.5 h-3.5" />, color: "emerald" },
   ]
 
   const energyOptions = [
-    { value: "peak" as const, label: "Peak", icon: <Zap className="w-4 h-4" />, emoji: "⚡" },
-    { value: "medium" as const, label: "Normal", icon: <Battery className="w-4 h-4" />, emoji: "⚙️" },
-    { value: "low" as const, label: "Low", icon: <Clock className="w-4 h-4" />, emoji: "💤" },
+    { value: "peak" as const, label: "Peak", icon: <Zap className="w-3.5 h-3.5" />, emoji: "⚡" },
+    { value: "medium" as const, label: "Normal", icon: <Battery className="w-3.5 h-3.5" />, emoji: "⚙️" },
+    { value: "low" as const, label: "Low", icon: <Clock className="w-3.5 h-3.5" />, emoji: "💤" },
   ]
 
   // Get confidence indicator for a field
@@ -247,33 +247,33 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
               </div>
 
               {/* Header */}
-              <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/5">
-                <div className="flex items-center gap-3">
+              <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/5">
+                <div className="flex items-center gap-2.5">
                   <motion.div
-                    className="p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30"
+                    className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30"
                     animate={{
-                      boxShadow: ["0 0 0 rgba(52, 211, 153, 0)", "0 0 15px rgba(52, 211, 153, 0.3)", "0 0 0 rgba(52, 211, 153, 0)"]
+                      boxShadow: ["0 0 0 rgba(52, 211, 153, 0)", "0 0 12px rgba(52, 211, 153, 0.3)", "0 0 0 rgba(52, 211, 153, 0)"]
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Sparkles className="w-5 h-5 text-emerald-400" />
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
                   </motion.div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">
+                    <h2 className="text-base font-bold text-white">
                       {initialTask ? "Edit Task" : "New Task"}
                     </h2>
-                    <p className="text-xs text-text-tertiary">
+                    <p className="text-[10px] text-text-tertiary">
                       {initialTask ? "Update your task details" : "Speak or type - AI fills the rest"}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {/* Voice Button */}
                   <motion.button
                     type="button"
                     onClick={handleVoiceToggle}
                     disabled={isTranscribing}
-                    className={`p-2.5 rounded-xl transition-all duration-300 ${
+                    className={`p-2 rounded-lg transition-all duration-300 ${
                       isRecording
                         ? "bg-red-500/20 border border-red-500/50 text-red-400"
                         : isTranscribing
@@ -283,25 +283,25 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     animate={isRecording ? {
-                      boxShadow: ["0 0 0 rgba(239, 68, 68, 0)", "0 0 20px rgba(239, 68, 68, 0.5)", "0 0 0 rgba(239, 68, 68, 0)"]
+                      boxShadow: ["0 0 0 rgba(239, 68, 68, 0)", "0 0 15px rgba(239, 68, 68, 0.5)", "0 0 0 rgba(239, 68, 68, 0)"]
                     } : {}}
                     transition={isRecording ? { duration: 1, repeat: Infinity } : {}}
                   >
                     {isTranscribing ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : isRecording ? (
-                      <MicOff className="w-5 h-5" />
+                      <MicOff className="w-4 h-4" />
                     ) : (
-                      <Mic className="w-5 h-5" />
+                      <Mic className="w-4 h-4" />
                     )}
                   </motion.button>
                   <motion.button
                     onClick={onClose}
-                    className="p-2 rounded-xl glass-card-sm hover:border-white/20 transition-all duration-300"
+                    className="p-1.5 rounded-lg glass-card-sm hover:border-white/20 transition-all duration-300"
                     whileHover={{ scale: 1.05, rotate: 90 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <X className="w-5 h-5 text-text-secondary" />
+                    <X className="w-4 h-4 text-text-secondary" />
                   </motion.button>
                 </div>
               </div>
@@ -313,22 +313,22 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="relative z-10 px-5 py-3 bg-gradient-to-r from-accent-purple/10 to-accent-cyan/10 border-b border-white/5"
+                    className="relative z-10 px-4 py-2.5 bg-gradient-to-r from-accent-purple/10 to-accent-cyan/10 border-b border-white/5"
                   >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Wand2 className="w-4 h-4 text-accent-purple" />
-                        <span className="text-sm text-text-secondary">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5 text-accent-purple" />
+                        <span className="text-xs text-text-secondary">
                           AI suggestion
                           {parseResult.confidence.overall >= 0.8 && (
-                            <span className="ml-2 text-xs text-emerald-400">High confidence</span>
+                            <span className="ml-1.5 text-[10px] text-emerald-400">High confidence</span>
                           )}
                         </span>
                       </div>
                       <motion.button
                         type="button"
                         onClick={handleApplySuggestion}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-accent-purple/20 text-accent-purple border border-accent-purple/30 hover:bg-accent-purple/30 transition-all"
+                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-accent-purple/20 text-accent-purple border border-accent-purple/30 hover:bg-accent-purple/30 transition-all"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -336,29 +336,29 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                       </motion.button>
                     </div>
                     {/* Preview of changes */}
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="px-2 py-1 rounded-md bg-white/5 text-white/90 font-medium truncate max-w-[200px]">
+                    <div className="flex flex-wrap gap-1.5 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/90 font-medium truncate max-w-[180px]">
                         "{parseResult.task.title}"
                       </span>
-                      <span className={`px-2 py-1 rounded-md ${
+                      <span className={`px-1.5 py-0.5 rounded ${
                         parseResult.task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                         parseResult.task.priority === 'low' ? 'bg-emerald-500/20 text-emerald-400' :
                         'bg-amber-500/20 text-amber-400'
                       }`}>
                         {parseResult.task.priority}
                       </span>
-                      <span className={`px-2 py-1 rounded-md ${
+                      <span className={`px-1.5 py-0.5 rounded ${
                         parseResult.task.energy === 'peak' ? 'bg-yellow-500/20 text-yellow-400' :
                         parseResult.task.energy === 'low' ? 'bg-blue-500/20 text-blue-400' :
                         'bg-cyan-500/20 text-cyan-400'
                       }`}>
-                        {parseResult.task.energy === 'normal' ? 'medium' : parseResult.task.energy} energy
+                        {parseResult.task.energy === 'normal' ? 'medium' : parseResult.task.energy}
                       </span>
-                      <span className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400">
+                      <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">
                         {parseResult.task.estimatedMinutes}m
                       </span>
                       {parseResult.task.deadline && (
-                        <span className="px-2 py-1 rounded-md bg-orange-500/20 text-orange-400">
+                        <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400">
                           📅 {new Date(parseResult.task.deadline).toLocaleDateString()}
                         </span>
                       )}
@@ -368,11 +368,11 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
               </AnimatePresence>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="relative z-10 p-5 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <form onSubmit={handleSubmit} className="relative z-10 p-4 space-y-3 overflow-y-auto max-h-[calc(90vh-80px)]">
                 {/* Title */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <Target className="w-4 h-4 text-accent-cyan" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <Target className="w-3.5 h-3.5 text-accent-cyan" />
                     Task Title
                     {isParsing && (
                       <motion.span
@@ -391,12 +391,12 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                       value={title}
                       onChange={(e) => handleTitleChange(e.target.value)}
                       placeholder="What do you need to do?"
-                      className="w-full px-4 py-4 rounded-2xl glass-card-sm border-white/10 text-white text-lg placeholder:text-text-tertiary focus:outline-none focus:border-accent-cyan/50 transition-all duration-300"
+                      className="w-full px-3 py-2.5 rounded-xl glass-card-sm border-white/10 text-white text-base placeholder:text-text-tertiary focus:outline-none focus:border-accent-cyan/50 transition-all duration-300"
                       required
                       autoFocus
                     />
                     {isParsing && (
-                      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
                         <motion.div
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-accent-purple/10 to-transparent"
                           animate={{ x: ["-100%", "100%"] }}
@@ -409,8 +409,8 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
 
                 {/* Description */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <Sparkles className="w-4 h-4 text-accent-purple" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-accent-purple" />
                     Description
                     <span className="text-text-tertiary font-normal">(optional)</span>
                   </label>
@@ -418,27 +418,27 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Add any notes or context..."
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-2xl glass-card-sm border-white/10 text-white placeholder:text-text-tertiary focus:outline-none focus:border-accent-purple/50 transition-all duration-300 resize-none"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-xl glass-card-sm border-white/10 text-white text-sm placeholder:text-text-tertiary focus:outline-none focus:border-accent-purple/50 transition-all duration-300 resize-none"
                   />
                 </div>
 
                 {/* Priority */}
                 <div className={getConfidenceStyle("priority")}>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <AlertCircle className="w-4 h-4 text-red-400" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-400" />
                     Priority
                     {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.priority < 0.5 && (
                       <span className="text-xs text-amber-400">(please review)</span>
                     )}
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {priorityOptions.map((option) => (
                       <motion.button
                         key={option.value}
                         type="button"
                         onClick={() => setPriority(option.value)}
-                        className={`relative py-3.5 px-4 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                        className={`relative py-2 px-3 rounded-lg font-medium text-xs transition-all duration-300 flex items-center justify-center gap-1.5 ${
                           priority === option.value
                             ? option.color === "red"
                               ? "bg-red-500/20 text-red-400 border border-red-500/50"
@@ -447,7 +447,7 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                                 : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
                             : "glass-card-sm text-text-secondary hover:text-white hover:border-white/20"
                         }`}
-                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         {option.icon}
@@ -455,13 +455,13 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                         {priority === option.value && (
                           <motion.div
                             layoutId="priorityIndicator"
-                            className="absolute inset-0 rounded-xl"
+                            className="absolute inset-0 rounded-lg"
                             style={{
                               boxShadow: option.color === "red"
-                                ? "0 0 20px rgba(239, 68, 68, 0.3)"
+                                ? "0 0 15px rgba(239, 68, 68, 0.3)"
                                 : option.color === "amber"
-                                  ? "0 0 20px rgba(245, 158, 11, 0.3)"
-                                  : "0 0 20px rgba(52, 211, 153, 0.3)"
+                                  ? "0 0 15px rgba(245, 158, 11, 0.3)"
+                                  : "0 0 15px rgba(52, 211, 153, 0.3)"
                             }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -473,34 +473,34 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
 
                 {/* Energy Level */}
                 <div className={getConfidenceStyle("energy")}>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <Battery className="w-4 h-4 text-accent-cyan" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <Battery className="w-3.5 h-3.5 text-accent-cyan" />
                     Energy Required
                     {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.energy < 0.5 && (
                       <span className="text-xs text-amber-400">(please review)</span>
                     )}
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {energyOptions.map((option) => (
                       <motion.button
                         key={option.value}
                         type="button"
                         onClick={() => setEnergyLevel(option.value)}
-                        className={`relative py-3.5 px-4 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                        className={`relative py-2 px-3 rounded-lg font-medium text-xs transition-all duration-300 flex items-center justify-center gap-1.5 ${
                           energyLevel === option.value
                             ? "bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/50"
                             : "glass-card-sm text-text-secondary hover:text-white hover:border-white/20"
                         }`}
-                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <span className="text-lg">{option.emoji}</span>
+                        <span className="text-sm">{option.emoji}</span>
                         {option.label}
                         {energyLevel === option.value && (
                           <motion.div
                             layoutId="energyIndicator"
-                            className="absolute inset-0 rounded-xl"
-                            style={{ boxShadow: "0 0 20px rgba(0, 229, 255, 0.3)" }}
+                            className="absolute inset-0 rounded-lg"
+                            style={{ boxShadow: "0 0 15px rgba(0, 229, 255, 0.3)" }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
                         )}
@@ -511,33 +511,33 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
 
                 {/* Estimated Time */}
                 <div className={getConfidenceStyle("time")}>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <Clock className="w-4 h-4 text-purple-400" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <Clock className="w-3.5 h-3.5 text-purple-400" />
                     Estimated Time
                     {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.time < 0.5 && (
                       <span className="text-xs text-amber-400">(please review)</span>
                     )}
                   </label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-5 gap-1.5">
                     {timePresets.map((preset) => (
                       <motion.button
                         key={preset.value}
                         type="button"
                         onClick={() => setEstimatedMinutes(preset.value)}
-                        className={`relative py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                        className={`relative py-2 rounded-lg font-medium text-xs transition-all duration-300 ${
                           estimatedMinutes === preset.value
                             ? "bg-purple-500/20 text-purple-400 border border-purple-500/50"
                             : "glass-card-sm text-text-secondary hover:text-white hover:border-white/20"
                         }`}
-                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         {preset.label}
                         {estimatedMinutes === preset.value && (
                           <motion.div
                             layoutId="timeIndicator"
-                            className="absolute inset-0 rounded-xl"
-                            style={{ boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)" }}
+                            className="absolute inset-0 rounded-lg"
+                            style={{ boxShadow: "0 0 15px rgba(168, 85, 247, 0.3)" }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
                         )}
@@ -548,18 +548,18 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
 
                 {/* Deadline */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
-                    <Calendar className="w-4 h-4 text-orange-400" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-orange-400" />
                     Deadline
                     <span className="text-text-tertiary font-normal">(optional)</span>
                   </label>
                   <div className="relative">
-                    <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+                    <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
                     <input
                       type="date"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl glass-card-sm border-white/10 text-white focus:outline-none focus:border-orange-500/50 transition-all duration-300"
+                      className="w-full pl-10 pr-3 py-2.5 rounded-xl glass-card-sm border-white/10 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all duration-300"
                     />
                   </div>
                 </div>
@@ -587,12 +587,12 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                 <motion.button
                   type="submit"
                   disabled={!title.trim() || submitting}
-                  className="w-full py-4 rounded-2xl font-bold text-lg bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 text-black disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  className="w-full py-3 rounded-xl font-semibold text-base bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 text-black disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   style={{
                     boxShadow: title.trim() && !submitting
-                      ? "0 0 30px rgba(52, 211, 153, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3)"
+                      ? "0 0 20px rgba(52, 211, 153, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3)"
                       : "none",
                   }}
                 >
@@ -607,7 +607,7 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     {submitting ? (
                       <>
                         <motion.div
-                          className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full"
+                          className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full"
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         />
@@ -615,7 +615,7 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-5 h-5" />
+                        <Sparkles className="w-4 h-4" />
                         {initialTask ? "Update Task" : "Create Task"}
                       </>
                     )}
