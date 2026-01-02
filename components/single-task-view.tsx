@@ -9,6 +9,7 @@ import { MenuDrawer } from "./menu-drawer"
 import { SessionControls } from "./session-controls"
 import { TimerEditModal } from "./timer-edit-modal"
 import { StatModal } from "./stat-modal"
+import { PlanProgressBar } from "./plan-progress-bar"
 import type { Task, Reasoning, UserStats } from "@/lib/types"
 
 // Ambient floating particles component
@@ -46,10 +47,19 @@ function AmbientParticles() {
   )
 }
 
+interface PlanProgress {
+  completed: number
+  total: number
+  elapsedMinutes: number
+  remainingMinutes: number
+  percentage: number
+}
+
 interface SingleTaskViewProps {
   task: Task
   reasoning: Reasoning
   stats: UserStats
+  planProgress?: PlanProgress
   onComplete: () => void
   onCantDo: () => void
   onNavigate?: (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => void
@@ -60,6 +70,7 @@ export function SingleTaskView({
   task,
   reasoning,
   stats,
+  planProgress,
   onComplete,
   onNavigate,
   onAddTask,
@@ -176,6 +187,17 @@ export function SingleTaskView({
             </motion.button>
           </div>
         </header>
+
+        {/* Plan Progress Bar */}
+        {planProgress && planProgress.total > 0 && (
+          <PlanProgressBar
+            completed={planProgress.completed}
+            total={planProgress.total}
+            elapsedMinutes={planProgress.elapsedMinutes}
+            remainingMinutes={planProgress.remainingMinutes}
+            percentage={planProgress.percentage}
+          />
+        )}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center -mt-8">

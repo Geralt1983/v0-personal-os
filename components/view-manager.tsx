@@ -11,6 +11,14 @@ import type { Reasoning, UserStats } from "@/lib/types"
 
 type View = "task" | "dashboard" | "settings" | "taskList" | "habits"
 
+interface PlanProgress {
+  completed: number
+  total: number
+  elapsedMinutes: number
+  remainingMinutes: number
+  percentage: number
+}
+
 interface ViewManagerProps {
   currentView: View
   tasks: Task[]
@@ -19,6 +27,7 @@ interface ViewManagerProps {
   reasoning: Reasoning
   surveillanceTasks: Array<{ id: string; title: string; daysOverdue: number }>
   allTasks: any[]
+  planProgress?: PlanProgress
   onComplete: () => void
   onCantDo: () => void
   onNavigate: (view: View) => void
@@ -37,6 +46,7 @@ export function ViewManager({
   reasoning,
   surveillanceTasks,
   allTasks,
+  planProgress,
   onComplete,
   onCantDo,
   onNavigate,
@@ -157,6 +167,7 @@ export function ViewManager({
             task={taskForView}
             reasoning={reasoning}
             stats={stats}
+            planProgress={planProgress}
             onComplete={onComplete}
             onCantDo={onCantDo}
             onNavigate={onNavigate}

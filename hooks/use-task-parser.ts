@@ -64,6 +64,7 @@ export function useTaskParser() {
 
       setIsParsing(true)
       setError(null)
+      console.log("[TaskParser] Starting parse for:", input.substring(0, 30) + "...")
 
       try {
         const response = await fetch("/api/ai/parse-task", {
@@ -81,18 +82,22 @@ export function useTaskParser() {
         })
 
         if (!response.ok) {
+          const errorText = await response.text()
+          console.error("[TaskParser] API error:", response.status, errorText)
           throw new Error("Failed to parse task")
         }
 
         const result: ParseResult = await response.json()
+        console.log("[TaskParser] Success! Result:", result.task.title)
         setParseResult(result)
         return result
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
-          // Request was cancelled, not an error
+          console.log("[TaskParser] Request aborted (user kept typing)")
           return null
         }
         const errorMessage = err instanceof Error ? err.message : "Unknown error"
+        console.error("[TaskParser] Error:", errorMessage)
         setError(errorMessage)
         return null
       } finally {
@@ -114,7 +119,9 @@ export function useTaskParser() {
         return
       }
 
+      console.log("[TaskParser] Debounce started, will parse in", delay, "ms")
       debounceTimerRef.current = setTimeout(() => {
+        console.log("[TaskParser] Debounce fired, calling parseTask")
         parseTask(input, "text")
       }, delay)
     },

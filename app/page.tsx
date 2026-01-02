@@ -45,7 +45,7 @@ export default function LifeOS() {
   } = useTasks()
   const { stats, loading: statsLoading } = useUserStats()
   const { stuckInfo } = useStuckDetection(currentTask?.id)
-  const { shouldShowPlanning, completePlanning, dismissPlanning } = useDailyPlanning()
+  const { shouldShowPlanning, fetchTodayPlan, progress: planProgress, hasPlanForToday } = useDailyPlanning()
 
   const processingTasksRef = useRef<Set<string>>(new Set())
 
@@ -285,6 +285,13 @@ export default function LifeOS() {
         reasoning={reasoning}
         surveillanceTasks={surveillanceTasks}
         allTasks={allTasks}
+        planProgress={hasPlanForToday ? {
+          completed: planProgress.completed,
+          total: planProgress.total,
+          elapsedMinutes: planProgress.elapsedMinutes,
+          remainingMinutes: planProgress.remainingMinutes,
+          percentage: planProgress.percentage,
+        } : undefined}
         onComplete={handleComplete}
         onCantDo={handleCantDo}
         onNavigate={(view) => navigateAndClose(view)}
@@ -298,11 +305,11 @@ export default function LifeOS() {
 
       <DailyPlanningModal
         isOpen={shouldShowPlanning}
-        onClose={dismissPlanning}
+        onClose={() => {}} // Modal handles its own close after plan creation
         tasks={tasks}
-        onSetEnergyLevel={(level) => completePlanning(level)}
-        onStartDay={() => {
-          completePlanning(userEnergyLevel || "medium")
+        onPlanCreated={() => {
+          fetchTodayPlan()
+          refetch()
         }}
       />
 
