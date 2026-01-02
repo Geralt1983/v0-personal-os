@@ -101,11 +101,6 @@ export default function DemoMode() {
     }))
   }
 
-  const handleCantDo = (reason?: string) => {
-    if (!currentTask) return
-    setTasks((prev) => prev.map((t) => (t.id === currentTask.id ? { ...t, skipped: true, skip_reason: reason } : t)))
-  }
-
   const handleAddTask = async (taskData: Partial<Task>) => {
     const newTask: Task = {
       id: `demo-${Date.now()}`,
@@ -336,7 +331,6 @@ export default function DemoMode() {
           reasoning={reasoning}
           stats={userStats}
           onComplete={handleComplete}
-          onCantDo={handleCantDo}
           onNavigate={handleNavigate}
           onAddTask={() => setAddTaskFormOpen(true)}
         />

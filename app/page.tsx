@@ -230,10 +230,6 @@ export default function LifeOS() {
     }
   }
 
-  const handleCantDo = () => {
-    // Placeholder
-  }
-
   if (tasksLoading || statsLoading) {
     return (
       <div className="min-h-screen bg-[#0a0f16] flex items-center justify-center">
@@ -293,7 +289,6 @@ export default function LifeOS() {
           percentage: planProgress.percentage,
         } : undefined}
         onComplete={handleComplete}
-        onCantDo={handleCantDo}
         onNavigate={(view) => navigateAndClose(view)}
         onAddTask={() => openModal("addTask")}
         onToggleComplete={handleToggleComplete}

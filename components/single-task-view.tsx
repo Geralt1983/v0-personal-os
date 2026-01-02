@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, SlidersHorizontal, Brain, Play, Pause, Check, Flame, Zap, Plus, Sparkles } from "lucide-react"
+import { Menu, SlidersHorizontal, Brain, Check, Flame, Zap, Plus, Sparkles } from "lucide-react"
 import { ReasoningCard } from "./reasoning-card"
 import { AiDialogueModal } from "./ai-dialogue-modal"
 import { MenuDrawer } from "./menu-drawer"
 import { SessionControls } from "./session-controls"
-import { TimerEditModal } from "./timer-edit-modal"
 import { StatModal } from "./stat-modal"
 import { PlanProgressBar } from "./plan-progress-bar"
 import type { Task, Reasoning, UserStats } from "@/lib/types"
@@ -61,7 +60,6 @@ interface SingleTaskViewProps {
   stats: UserStats
   planProgress?: PlanProgress
   onComplete: () => void
-  onCantDo: () => void
   onNavigate?: (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => void
   onAddTask?: () => void
 }
@@ -79,57 +77,16 @@ export function SingleTaskView({
   const [showAiDialog, setShowAiDialog] = useState(false)
   const [showMenuDrawer, setShowMenuDrawer] = useState(false)
   const [showSessionControls, setShowSessionControls] = useState(false)
-  const [showTimerEdit, setShowTimerEdit] = useState(false)
   const [showStatModal, setShowStatModal] = useState<"streak" | "trust" | null>(null)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(task.estimatedMinutes * 60)
   const [isCompleting, setIsCompleting] = useState(false)
-  const [defaultTimerMinutes, setDefaultTimerMinutes] = useState(25)
-
-  useEffect(() => {
-    if (!timerRunning || timeLeft <= 0) return
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setTimerRunning(false)
-          if (typeof window !== "undefined" && "Notification" in window) {
-            if (Notification.permission === "granted") {
-              new Notification("Timer Complete!", {
-                body: `Time's up for: ${task.title}`,
-                icon: "/favicon.ico",
-              })
-            }
-          }
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [timerRunning, timeLeft, task.title])
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return { mins: mins.toString().padStart(2, "0"), secs: secs.toString().padStart(2, "0") }
-  }
 
   const handleComplete = useCallback(() => {
     setIsCompleting(true)
     setTimeout(() => {
       onComplete()
       setIsCompleting(false)
-      setTimeLeft(defaultTimerMinutes * 60)
-      setTimerRunning(false)
     }, 800)
-  }, [onComplete, defaultTimerMinutes])
-
-  const handleTimerSave = (minutes: number) => {
-    setTimeLeft(minutes * 60)
-    setDefaultTimerMinutes(minutes)
-  }
+  }, [onComplete])
 
   const handleNavigate = (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => {
     console.log("[v0] SingleTaskView handleNavigate:", view)
@@ -146,10 +103,6 @@ export function SingleTaskView({
       onAddTask()
     }
   }
-
-  const time = formatTime(timeLeft)
-
-  const progressPercent = ((defaultTimerMinutes * 60 - timeLeft) / (defaultTimerMinutes * 60)) * 100
 
   return (
     <>
@@ -243,73 +196,10 @@ export function SingleTaskView({
           {/* Reasoning Card */}
           <AnimatePresence>{showReasoning && <ReasoningCard reasoning={reasoning} />}</AnimatePresence>
 
-          {/* Premium Timer Display */}
-          <motion.button
-            onClick={() => setShowTimerEdit(true)}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="mt-8 mb-4 relative group"
-          >
-            {/* Timer Ring Progress */}
-            <div className="absolute -inset-6 rounded-full opacity-50">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50" cy="50" r="45"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.05)"
-                  strokeWidth="2"
-                />
-                <motion.circle
-                  cx="50" cy="50" r="45"
-                  fill="none"
-                  stroke="url(#timerGradient)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeDasharray={283}
-                  strokeDashoffset={283 - (283 * progressPercent) / 100}
-                  transition={{ duration: 0.5 }}
-                />
-                <defs>
-                  <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00e5ff" />
-                    <stop offset="100%" stopColor="#bf7fff" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <div className="relative">
-              <p className="font-mono text-6xl md:text-7xl font-bold tracking-tight">
-                <span className="text-gradient-primary">{time.mins}</span>
-                <motion.span
-                  className="text-white/20"
-                  animate={{ opacity: timerRunning ? [1, 0.3, 1] : 1 }}
-                  transition={{ duration: 1, repeat: timerRunning ? Infinity : 0 }}
-                >:</motion.span>
-                <span className="text-white/60">{time.secs}</span>
-              </p>
-            </div>
-          </motion.button>
-
-          {/* Timer Control Button - Premium */}
-          <motion.button
-            onClick={() => setTimerRunning(!timerRunning)}
-            className={`flex items-center gap-2.5 px-6 py-3 rounded-full mb-10 transition-all duration-300 ${
-              timerRunning
-                ? 'glass-card-sm border-accent-cyan/30 text-accent-cyan'
-                : 'glass-card-sm text-text-secondary hover:text-text-primary hover:border-white/20'
-            }`}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            <span className="text-sm font-medium">{timerRunning ? "Pause Timer" : "Start Timer"}</span>
-          </motion.button>
-
           {/* Premium Complete Button */}
           <motion.button
             onClick={handleComplete}
-            className="w-full max-w-sm py-5 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 text-black font-bold text-lg flex items-center justify-center gap-3 relative overflow-hidden btn-premium"
+            className="mt-10 w-full max-w-sm py-5 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 text-black font-bold text-lg flex items-center justify-center gap-3 relative overflow-hidden btn-premium"
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             disabled={isCompleting}
@@ -380,13 +270,6 @@ export function SingleTaskView({
       />
 
       <SessionControls isOpen={showSessionControls} onClose={() => setShowSessionControls(false)} />
-
-      <TimerEditModal
-        isOpen={showTimerEdit}
-        onClose={() => setShowTimerEdit(false)}
-        currentMinutes={Math.ceil(timeLeft / 60)}
-        onSave={handleTimerSave}
-      />
 
       <StatModal
         isOpen={showStatModal !== null}

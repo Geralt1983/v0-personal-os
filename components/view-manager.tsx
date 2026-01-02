@@ -29,7 +29,6 @@ interface ViewManagerProps {
   allTasks: any[]
   planProgress?: PlanProgress
   onComplete: () => void
-  onCantDo: () => void
   onNavigate: (view: View) => void
   onAddTask: () => void
   onToggleComplete: (id: string) => Promise<void>
@@ -48,7 +47,6 @@ export function ViewManager({
   allTasks,
   planProgress,
   onComplete,
-  onCantDo,
   onNavigate,
   onAddTask,
   onToggleComplete,
@@ -169,7 +167,6 @@ export function ViewManager({
             stats={stats}
             planProgress={planProgress}
             onComplete={onComplete}
-            onCantDo={onCantDo}
             onNavigate={onNavigate}
             onAddTask={onAddTask}
           />
