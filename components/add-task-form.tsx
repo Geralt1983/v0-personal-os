@@ -120,6 +120,10 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
   // Trigger AI parsing when user types in title
   const handleTitleChange = (value: string) => {
     setTitle(value)
+    // Reset showAiSuggestion so new suggestions can appear
+    if (showAiSuggestion) {
+      setShowAiSuggestion(false)
+    }
     if (value.length > 10 && !initialTask) {
       debouncedParse(value, 800)
     }
@@ -302,7 +306,7 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                 </div>
               </div>
 
-              {/* AI Suggestion Banner */}
+              {/* AI Suggestion Banner with Preview */}
               <AnimatePresence>
                 {parseResult && !showAiSuggestion && (
                   <motion.div
@@ -311,11 +315,11 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     exit={{ opacity: 0, height: 0 }}
                     className="relative z-10 px-5 py-3 bg-gradient-to-r from-accent-purple/10 to-accent-cyan/10 border-b border-white/5"
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
                         <Wand2 className="w-4 h-4 text-accent-purple" />
                         <span className="text-sm text-text-secondary">
-                          AI suggestion ready
+                          AI suggestion
                           {parseResult.confidence.overall >= 0.8 && (
                             <span className="ml-2 text-xs text-emerald-400">High confidence</span>
                           )}
@@ -330,6 +334,34 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                       >
                         Apply
                       </motion.button>
+                    </div>
+                    {/* Preview of changes */}
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className="px-2 py-1 rounded-md bg-white/5 text-white/90 font-medium truncate max-w-[200px]">
+                        "{parseResult.task.title}"
+                      </span>
+                      <span className={`px-2 py-1 rounded-md ${
+                        parseResult.task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                        parseResult.task.priority === 'low' ? 'bg-emerald-500/20 text-emerald-400' :
+                        'bg-amber-500/20 text-amber-400'
+                      }`}>
+                        {parseResult.task.priority}
+                      </span>
+                      <span className={`px-2 py-1 rounded-md ${
+                        parseResult.task.energy === 'peak' ? 'bg-yellow-500/20 text-yellow-400' :
+                        parseResult.task.energy === 'low' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-cyan-500/20 text-cyan-400'
+                      }`}>
+                        {parseResult.task.energy === 'normal' ? 'medium' : parseResult.task.energy} energy
+                      </span>
+                      <span className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400">
+                        {parseResult.task.estimatedMinutes}m
+                      </span>
+                      {parseResult.task.deadline && (
+                        <span className="px-2 py-1 rounded-md bg-orange-500/20 text-orange-400">
+                          📅 {new Date(parseResult.task.deadline).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </motion.div>
                 )}
