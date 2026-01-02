@@ -1,9 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Calendar, Sparkles, Zap, Clock, Target, Battery, AlertCircle } from "lucide-react"
+import { X, Calendar, Sparkles, Zap, Clock, Target, Battery, AlertCircle, Mic, MicOff, Wand2, Loader2 } from "lucide-react"
+import { useTaskParser, type ParseResult } from "@/hooks/use-task-parser"
+import { useVoiceRecorder } from "@/hooks/use-voice-recorder"
 
 interface AddTaskFormProps {
   isOpen: boolean
@@ -19,6 +21,11 @@ interface AddTaskFormProps {
   initialTask?: any
 }
 
+// Map AI energy values to form values
+const mapEnergy = (aiEnergy: "peak" | "normal" | "low"): "peak" | "medium" | "low" => {
+  return aiEnergy === "normal" ? "medium" : aiEnergy
+}
+
 export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -27,6 +34,12 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
   const [estimatedMinutes, setEstimatedMinutes] = useState(25)
   const [deadline, setDeadline] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false)
+  const [lastAppliedResult, setLastAppliedResult] = useState<ParseResult | null>(null)
+
+  const { isParsing, parseResult, debouncedParse, parseVoice, clearResult } = useTaskParser()
+  const { isRecording, startRecording, stopRecording } = useVoiceRecorder()
 
   useEffect(() => {
     if (initialTask) {
@@ -36,6 +49,8 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
       setEnergyLevel(initialTask.energy_level || "medium")
       setEstimatedMinutes(initialTask.estimated_minutes || 25)
       setDeadline(initialTask.deadline?.split("T")[0] || "")
+      setShowAiSuggestion(false)
+      clearResult()
     } else {
       setTitle("")
       setDescription("")
@@ -43,8 +58,79 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
       setEnergyLevel("medium")
       setEstimatedMinutes(25)
       setDeadline("")
+      setShowAiSuggestion(false)
+      clearResult()
     }
-  }, [initialTask, isOpen])
+  }, [initialTask, isOpen, clearResult])
+
+  // Apply AI parse result to form
+  const applyParseResult = useCallback((result: ParseResult) => {
+    setTitle(result.task.title)
+    if (result.task.description) {
+      setDescription(result.task.description)
+    }
+    setPriority(result.task.priority)
+    setEnergyLevel(mapEnergy(result.task.energy))
+    setEstimatedMinutes(result.task.estimatedMinutes)
+    if (result.task.deadline) {
+      const dateStr = result.task.deadline.split("T")[0]
+      if (dateStr) setDeadline(dateStr)
+    }
+    setLastAppliedResult(result)
+    setShowAiSuggestion(true)
+  }, [])
+
+  // Handle voice recording
+  const handleVoiceToggle = async () => {
+    if (isRecording) {
+      const audioBlob = await stopRecording()
+      if (audioBlob.size > 0) {
+        setIsTranscribing(true)
+        try {
+          // Transcribe audio
+          const formData = new FormData()
+          formData.append("file", audioBlob, "audio.webm")
+
+          const transcribeResponse = await fetch("/api/transcribe", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (transcribeResponse.ok) {
+            const { text } = await transcribeResponse.json()
+            if (text) {
+              // Parse the transcription with AI
+              const result = await parseVoice(text)
+              if (result) {
+                applyParseResult(result)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Voice transcription failed:", error)
+        } finally {
+          setIsTranscribing(false)
+        }
+      }
+    } else {
+      await startRecording()
+    }
+  }
+
+  // Trigger AI parsing when user types in title
+  const handleTitleChange = (value: string) => {
+    setTitle(value)
+    if (value.length > 10 && !initialTask) {
+      debouncedParse(value, 800)
+    }
+  }
+
+  // Apply suggestion button
+  const handleApplySuggestion = () => {
+    if (parseResult) {
+      applyParseResult(parseResult)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,6 +156,8 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
         setEnergyLevel("medium")
         setEstimatedMinutes(25)
         setDeadline("")
+        setShowAiSuggestion(false)
+        clearResult()
       }
       onClose()
     } catch (error) {
@@ -98,6 +186,14 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
     { value: "medium" as const, label: "Normal", icon: <Battery className="w-4 h-4" />, emoji: "⚙️" },
     { value: "low" as const, label: "Low", icon: <Clock className="w-4 h-4" />, emoji: "💤" },
   ]
+
+  // Get confidence indicator for a field
+  const getConfidenceStyle = (field: keyof ParseResult["confidence"]["fields"]) => {
+    if (!showAiSuggestion || !lastAppliedResult) return ""
+    const confidence = lastAppliedResult.confidence.fields[field]
+    if (confidence < 0.5) return "ring-2 ring-amber-500/30 ring-offset-1 ring-offset-transparent"
+    return ""
+  }
 
   return (
     <AnimatePresence>
@@ -163,19 +259,81 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                       {initialTask ? "Edit Task" : "New Task"}
                     </h2>
                     <p className="text-xs text-text-tertiary">
-                      {initialTask ? "Update your task details" : "What's on your mind?"}
+                      {initialTask ? "Update your task details" : "Speak or type - AI fills the rest"}
                     </p>
                   </div>
                 </div>
-                <motion.button
-                  onClick={onClose}
-                  className="p-2 rounded-xl glass-card-sm hover:border-white/20 transition-all duration-300"
-                  whileHover={{ scale: 1.05, rotate: 90 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <X className="w-5 h-5 text-text-secondary" />
-                </motion.button>
+                <div className="flex items-center gap-2">
+                  {/* Voice Button */}
+                  <motion.button
+                    type="button"
+                    onClick={handleVoiceToggle}
+                    disabled={isTranscribing}
+                    className={`p-2.5 rounded-xl transition-all duration-300 ${
+                      isRecording
+                        ? "bg-red-500/20 border border-red-500/50 text-red-400"
+                        : isTranscribing
+                          ? "bg-accent-cyan/20 border border-accent-cyan/50 text-accent-cyan"
+                          : "glass-card-sm hover:border-white/20 text-text-secondary hover:text-white"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={isRecording ? {
+                      boxShadow: ["0 0 0 rgba(239, 68, 68, 0)", "0 0 20px rgba(239, 68, 68, 0.5)", "0 0 0 rgba(239, 68, 68, 0)"]
+                    } : {}}
+                    transition={isRecording ? { duration: 1, repeat: Infinity } : {}}
+                  >
+                    {isTranscribing ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : isRecording ? (
+                      <MicOff className="w-5 h-5" />
+                    ) : (
+                      <Mic className="w-5 h-5" />
+                    )}
+                  </motion.button>
+                  <motion.button
+                    onClick={onClose}
+                    className="p-2 rounded-xl glass-card-sm hover:border-white/20 transition-all duration-300"
+                    whileHover={{ scale: 1.05, rotate: 90 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <X className="w-5 h-5 text-text-secondary" />
+                  </motion.button>
+                </div>
               </div>
+
+              {/* AI Suggestion Banner */}
+              <AnimatePresence>
+                {parseResult && !showAiSuggestion && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="relative z-10 px-5 py-3 bg-gradient-to-r from-accent-purple/10 to-accent-cyan/10 border-b border-white/5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Wand2 className="w-4 h-4 text-accent-purple" />
+                        <span className="text-sm text-text-secondary">
+                          AI suggestion ready
+                          {parseResult.confidence.overall >= 0.8 && (
+                            <span className="ml-2 text-xs text-emerald-400">High confidence</span>
+                          )}
+                        </span>
+                      </div>
+                      <motion.button
+                        type="button"
+                        onClick={handleApplySuggestion}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-accent-purple/20 text-accent-purple border border-accent-purple/30 hover:bg-accent-purple/30 transition-all"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Apply
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="relative z-10 p-5 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -184,16 +342,37 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                   <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
                     <Target className="w-4 h-4 text-accent-cyan" />
                     Task Title
+                    {isParsing && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-1 text-xs text-accent-purple"
+                      >
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Analyzing...
+                      </motion.span>
+                    )}
                   </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="What do you need to do?"
-                    className="w-full px-4 py-4 rounded-2xl glass-card-sm border-white/10 text-white text-lg placeholder:text-text-tertiary focus:outline-none focus:border-accent-cyan/50 transition-all duration-300"
-                    required
-                    autoFocus
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      placeholder="What do you need to do?"
+                      className="w-full px-4 py-4 rounded-2xl glass-card-sm border-white/10 text-white text-lg placeholder:text-text-tertiary focus:outline-none focus:border-accent-cyan/50 transition-all duration-300"
+                      required
+                      autoFocus
+                    />
+                    {isParsing && (
+                      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-accent-purple/10 to-transparent"
+                          animate={{ x: ["-100%", "100%"] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -213,10 +392,13 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                 </div>
 
                 {/* Priority */}
-                <div>
+                <div className={getConfidenceStyle("priority")}>
                   <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
                     <AlertCircle className="w-4 h-4 text-red-400" />
                     Priority
+                    {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.priority < 0.5 && (
+                      <span className="text-xs text-amber-400">(please review)</span>
+                    )}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {priorityOptions.map((option) => (
@@ -258,10 +440,13 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                 </div>
 
                 {/* Energy Level */}
-                <div>
+                <div className={getConfidenceStyle("energy")}>
                   <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
                     <Battery className="w-4 h-4 text-accent-cyan" />
                     Energy Required
+                    {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.energy < 0.5 && (
+                      <span className="text-xs text-amber-400">(please review)</span>
+                    )}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {energyOptions.map((option) => (
@@ -293,10 +478,13 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                 </div>
 
                 {/* Estimated Time */}
-                <div>
+                <div className={getConfidenceStyle("time")}>
                   <label className="flex items-center gap-2 text-sm font-semibold text-text-secondary mb-3">
                     <Clock className="w-4 h-4 text-purple-400" />
                     Estimated Time
+                    {showAiSuggestion && lastAppliedResult && lastAppliedResult.confidence.fields.time < 0.5 && (
+                      <span className="text-xs text-amber-400">(please review)</span>
+                    )}
                   </label>
                   <div className="grid grid-cols-5 gap-2">
                     {timePresets.map((preset) => (
@@ -343,6 +531,25 @@ export function AddTaskForm({ isOpen, onClose, onSubmit, initialTask }: AddTaskF
                     />
                   </div>
                 </div>
+
+                {/* AI Reasoning (when suggestion applied) */}
+                <AnimatePresence>
+                  {showAiSuggestion && lastAppliedResult?.reasoning && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-3 rounded-xl bg-white/5 border border-white/10"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Wand2 className="w-4 h-4 text-accent-purple mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-text-tertiary leading-relaxed">
+                          {lastAppliedResult.reasoning}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Submit Button */}
                 <motion.button
