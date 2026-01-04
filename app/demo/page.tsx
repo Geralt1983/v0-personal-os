@@ -173,7 +173,7 @@ export default function DemoMode() {
   // Empty state
   if (!currentTask && view === "task") {
     return (
-      <div className="max-w-lg mx-auto min-h-screen relative">
+      <div className="max-w-lg mx-auto min-h-screen relative pb-24">
         <header className="flex items-center justify-between px-6 py-6">
           <button
             onClick={() => setMenuDrawerOpen(true)}
@@ -317,7 +317,7 @@ export default function DemoMode() {
     }))
 
   return (
-    <div className="max-w-lg mx-auto min-h-screen relative">
+    <div className="max-w-lg mx-auto min-h-screen relative pb-24">
       {/* Demo mode indicator */}
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
         <div className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">

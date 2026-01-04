@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowLeft, Flame, Zap, Target, Clock, AlertTriangle, TrendingUp } from "lucide-react"
+import { ArrowLeft, Flame, Zap, Target, AlertTriangle } from "lucide-react"
 import type { UserStats } from "@/lib/types"
 
 interface SurveillanceTask {
@@ -18,16 +18,6 @@ interface WarRoomDashboardProps {
 }
 
 export function WarRoomDashboard({ stats, surveillanceTasks, onBack }: WarRoomDashboardProps) {
-  const mockWeekData = [
-    { name: "M", completed: 4, total: 4 },
-    { name: "T", completed: 3, total: 3 },
-    { name: "W", completed: 5, total: 5 },
-    { name: "T", completed: 2, total: 4 },
-    { name: "F", completed: 0, total: 3 },
-    { name: "S", completed: 0, total: 0 },
-    { name: "S", completed: 0, total: 0 },
-  ]
-
   const statCards = [
     {
       icon: <Flame size={20} className="text-orange-400" />,
@@ -46,12 +36,6 @@ export function WarRoomDashboard({ stats, surveillanceTasks, onBack }: WarRoomDa
       value: `${stats.weeklyCompletionRate || 85}%`,
       label: "Weekly Complete",
       unit: null,
-    },
-    {
-      icon: <Clock size={20} className="text-purple-400" />,
-      value: stats.avgCompletionTime || 18,
-      label: "Avg Time",
-      unit: "min",
     },
   ]
 
@@ -127,43 +111,6 @@ export function WarRoomDashboard({ stats, surveillanceTasks, onBack }: WarRoomDa
           </div>
         </div>
       )}
-
-      <div className="px-5 mt-8">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp size={18} className="text-cyan-400" />
-          <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">This Week</h2>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-[#131720] border border-white/5">
-          <div className="flex justify-between gap-2">
-            {mockWeekData.map((day, index) => {
-              const percentage = day.total > 0 ? (day.completed / day.total) * 100 : 0
-              return (
-                <div key={day.name} className="flex flex-col items-center gap-2 flex-1">
-                  <div className="relative w-full h-24 bg-[#1a2332] rounded-lg overflow-hidden">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${percentage}%` }}
-                      transition={{ delay: 0.3 + index * 0.1, type: "spring", damping: 15 }}
-                      className={`absolute bottom-0 w-full rounded-lg ${
-                        percentage === 100
-                          ? "bg-gradient-to-t from-emerald-600 to-emerald-400"
-                          : percentage > 0
-                            ? "bg-gradient-to-t from-cyan-600 to-cyan-400"
-                            : ""
-                      }`}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-slate-400">{day.name}</span>
-                  <span className="text-xs text-slate-600">
-                    {day.total > 0 ? `${day.completed}/${day.total}` : "-"}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
 
       {/* Empty state for surveillance */}
       {surveillanceTasks.length === 0 && (

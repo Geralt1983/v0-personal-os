@@ -46,6 +46,7 @@ export default function LifeOS() {
   const { stats, loading: statsLoading } = useUserStats()
   const { stuckInfo } = useStuckDetection(currentTask?.id)
   const { shouldShowPlanning, fetchTodayPlan, progress: planProgress, hasPlanForToday } = useDailyPlanning()
+  const [skipPlanningForSession, setSkipPlanningForSession] = useState(false)
 
   const processingTasksRef = useRef<Set<string>>(new Set())
 
@@ -296,11 +297,12 @@ export default function LifeOS() {
         onEditTask={handleEditTask}
         onOpenMenuDrawer={() => openModal("menuDrawer")}
         onOpenVoiceReminder={() => openModal("voiceReminder")}
+        onNeedHelp={() => openModal("breakdown")}
       />
 
       <DailyPlanningModal
-        isOpen={shouldShowPlanning}
-        onClose={() => {}} // Modal handles its own close after plan creation
+        isOpen={shouldShowPlanning && !skipPlanningForSession}
+        onClose={() => setSkipPlanningForSession(true)}
         tasks={tasks}
         onPlanCreated={() => {
           fetchTodayPlan()

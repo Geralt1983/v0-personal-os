@@ -2,11 +2,9 @@
 
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, SlidersHorizontal, Brain, Check, Flame, Zap, Plus, Sparkles } from "lucide-react"
+import { Menu, Brain, Check, Flame, Zap, Plus, Sparkles } from "lucide-react"
 import { ReasoningCard } from "./reasoning-card"
-import { AiDialogueModal } from "./ai-dialogue-modal"
 import { MenuDrawer } from "./menu-drawer"
-import { SessionControls } from "./session-controls"
 import { StatModal } from "./stat-modal"
 import { PlanProgressBar } from "./plan-progress-bar"
 import type { Task, Reasoning, UserStats } from "@/lib/types"
@@ -62,6 +60,7 @@ interface SingleTaskViewProps {
   onComplete: () => void
   onNavigate?: (view: "task" | "dashboard" | "settings" | "taskList" | "habits") => void
   onAddTask?: () => void
+  onNeedHelp?: () => void
 }
 
 export function SingleTaskView({
@@ -72,11 +71,10 @@ export function SingleTaskView({
   onComplete,
   onNavigate,
   onAddTask,
+  onNeedHelp,
 }: SingleTaskViewProps) {
   const [showReasoning, setShowReasoning] = useState(false)
-  const [showAiDialog, setShowAiDialog] = useState(false)
   const [showMenuDrawer, setShowMenuDrawer] = useState(false)
-  const [showSessionControls, setShowSessionControls] = useState(false)
   const [showStatModal, setShowStatModal] = useState<"streak" | "trust" | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
 
@@ -107,7 +105,7 @@ export function SingleTaskView({
   return (
     <>
       <AmbientParticles />
-      <div className="min-h-screen flex flex-col px-6 py-6 relative z-10">
+      <div className="min-h-screen flex flex-col px-6 pt-6 pb-24 relative z-10">
         {/* Premium Header */}
         <header className="flex items-center justify-between mb-10">
           <motion.button
@@ -119,26 +117,15 @@ export function SingleTaskView({
           >
             <Menu className="w-5 h-5 text-text-secondary" />
           </motion.button>
-          <div className="flex items-center gap-3">
-            <motion.button
-              onClick={handleAddTask}
-              className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 hover:border-emerald-400/50 transition-all duration-300"
-              aria-label="Add Task"
-              whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(52, 211, 153, 0.3)" }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Plus className="w-5 h-5 text-emerald-400" />
-            </motion.button>
-            <motion.button
-              onClick={() => setShowSessionControls(true)}
-              className="p-3 rounded-2xl glass-card-sm hover:border-white/20 transition-all duration-300"
-              aria-label="Session Controls"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <SlidersHorizontal className="w-5 h-5 text-text-secondary" />
-            </motion.button>
-          </div>
+          <motion.button
+            onClick={handleAddTask}
+            className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 hover:border-emerald-400/50 transition-all duration-300"
+            aria-label="Add Task"
+            whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(52, 211, 153, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus className="w-5 h-5 text-emerald-400" />
+          </motion.button>
         </header>
 
         {/* Plan Progress Bar */}
@@ -149,6 +136,7 @@ export function SingleTaskView({
             elapsedMinutes={planProgress.elapsedMinutes}
             remainingMinutes={planProgress.remainingMinutes}
             percentage={planProgress.percentage}
+            onClick={() => onNavigate?.("taskList")}
           />
         )}
 
@@ -217,15 +205,17 @@ export function SingleTaskView({
             <span className="relative z-10">Complete Task</span>
           </motion.button>
 
-          {/* Can't Do Button - Subtle */}
-          <motion.button
-            onClick={() => setShowAiDialog(true)}
-            className="mt-5 px-6 py-3 text-text-tertiary hover:text-text-secondary transition-all duration-300 text-sm font-medium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Need help with this?
-          </motion.button>
+          {/* Need Help Button - Subtle */}
+          {onNeedHelp && (
+            <motion.button
+              onClick={onNeedHelp}
+              className="mt-5 px-6 py-3 text-text-tertiary hover:text-text-secondary transition-all duration-300 text-sm font-medium"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Need help with this?
+            </motion.button>
+          )}
         </div>
 
         {/* Premium Footer Stats */}
@@ -269,8 +259,6 @@ export function SingleTaskView({
         onAddTask={handleAddTask}
       />
 
-      <SessionControls isOpen={showSessionControls} onClose={() => setShowSessionControls(false)} />
-
       <StatModal
         isOpen={showStatModal !== null}
         onClose={() => setShowStatModal(null)}
@@ -278,18 +266,6 @@ export function SingleTaskView({
         currentStreak={stats.currentStreak}
         trustScore={stats.trustScore}
       />
-
-      <AnimatePresence>
-        {showAiDialog && (
-          <AiDialogueModal
-            task={task}
-            onClose={() => setShowAiDialog(false)}
-            onSelectSubtask={() => {
-              setShowAiDialog(false)
-            }}
-          />
-        )}
-      </AnimatePresence>
     </>
   )
 }

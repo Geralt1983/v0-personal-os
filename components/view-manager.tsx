@@ -36,6 +36,7 @@ interface ViewManagerProps {
   onEditTask: (task: any) => void
   onOpenMenuDrawer: () => void
   onOpenVoiceReminder: () => void
+  onNeedHelp?: () => void
 }
 
 export function ViewManager({
@@ -54,11 +55,12 @@ export function ViewManager({
   onEditTask,
   onOpenMenuDrawer,
   onOpenVoiceReminder,
+  onNeedHelp,
 }: ViewManagerProps) {
   // Empty state when no current task and on task view
   if (!currentTask && currentView === "task") {
     return (
-      <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16]">
+      <div className="max-w-lg mx-auto min-h-screen relative bg-[#0a0f16] pb-24">
         <header className="flex items-center justify-between px-6 py-6">
           <button onClick={onOpenMenuDrawer} className="p-3 rounded-full bg-[#1a2332] border border-white/10">
             <Menu className="w-5 h-5 text-slate-400" />
@@ -169,6 +171,7 @@ export function ViewManager({
             onComplete={onComplete}
             onNavigate={onNavigate}
             onAddTask={onAddTask}
+            onNeedHelp={onNeedHelp}
           />
         )}
 

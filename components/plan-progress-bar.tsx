@@ -9,6 +9,7 @@ interface PlanProgressBarProps {
   elapsedMinutes: number
   remainingMinutes: number
   percentage: number
+  onClick?: () => void
 }
 
 export function PlanProgressBar({
@@ -17,6 +18,7 @@ export function PlanProgressBar({
   elapsedMinutes,
   remainingMinutes,
   percentage,
+  onClick,
 }: PlanProgressBarProps) {
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -33,7 +35,10 @@ export function PlanProgressBar({
       animate={{ opacity: 1, y: 0 }}
       className="mx-6 mb-4"
     >
-      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
+      <button
+        onClick={onClick}
+        className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer text-left"
+      >
         {/* Progress Text */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -66,7 +71,7 @@ export function PlanProgressBar({
             {formatTime(remainingMinutes)} remaining in today's plan
           </div>
         )}
-      </div>
+      </button>
     </motion.div>
   )
 }

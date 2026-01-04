@@ -9,8 +9,6 @@ import {
   User,
   Cloud,
   Smartphone,
-  Target,
-  RotateCcw,
   TrendingUp,
   Flame,
   Brain,
@@ -44,11 +42,8 @@ type SubScreen =
   | "profile"
   | "sync"
   | "devices"
-  | "durations"
   | "prioritization"
   | "reasoning"
-  | "voice"
-  | "push"
   | "reminders"
   | "theme"
   | "accent"
@@ -125,21 +120,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
                 />
               </SettingsSection>
 
-              {/* Focus Section */}
-              <SettingsSection title="FOCUS">
-                <SettingsRow
-                  icon={<Target size={20} />}
-                  label="Default Durations"
-                  value={`${settings.defaultFocusDuration}/${settings.defaultBreakDuration}m`}
-                  onClick={() => setActiveSubScreen("durations")}
-                />
-                <SettingsRow
-                  icon={<RotateCcw size={20} />}
-                  label="Auto-start Breaks"
-                  toggle
-                  toggleValue={settings.autoStartBreaks}
-                  onToggle={(val) => handleToggle("autoStartBreaks", val)}
-                />
+              {/* Display Section */}
+              <SettingsSection title="DISPLAY">
                 <SettingsRow
                   icon={<TrendingUp size={20} />}
                   label="Show Trust Score"
@@ -308,8 +290,6 @@ function SubScreenRenderer({
       return <SyncScreen onBack={onBack} />
     case "devices":
       return <DevicesScreen onBack={onBack} />
-    case "durations":
-      return <DurationsScreen settings={settings} updateSetting={updateSetting} onBack={onBack} />
     case "prioritization":
       return <PrioritizationScreen settings={settings} updateSetting={updateSetting} onBack={onBack} />
     case "reasoning":
@@ -422,69 +402,6 @@ function DevicesScreen({ onBack }: { onBack: () => void }) {
         <p className="text-sm text-slate-500 text-center">
           Multi-device sync coming soon. Currently, your data is only available on this device.
         </p>
-      </div>
-    </SubScreenLayout>
-  )
-}
-
-// Durations sub-screen
-function DurationsScreen({
-  settings,
-  updateSetting,
-  onBack,
-}: {
-  settings: UserSettings
-  updateSetting: <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => void
-  onBack: () => void
-}) {
-  const [focusDuration, setFocusDuration] = useState(settings.defaultFocusDuration)
-  const [breakDuration, setBreakDuration] = useState(settings.defaultBreakDuration)
-
-  const handleSave = () => {
-    updateSetting("defaultFocusDuration", focusDuration)
-    updateSetting("defaultBreakDuration", breakDuration)
-    onBack()
-  }
-
-  return (
-    <SubScreenLayout title="Default Durations" onBack={onBack} onSave={handleSave}>
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm text-slate-400 mb-3">Focus Session: {focusDuration} minutes</label>
-          <input
-            type="range"
-            min={5}
-            max={90}
-            step={5}
-            value={focusDuration}
-            onChange={(e) => setFocusDuration(Number(e.target.value))}
-            className="w-full accent-cyan-500"
-          />
-          <div className="flex justify-between text-xs text-slate-500 mt-1">
-            <span>5m</span>
-            <span>25m</span>
-            <span>45m</span>
-            <span>90m</span>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-slate-400 mb-3">Break: {breakDuration} minutes</label>
-          <input
-            type="range"
-            min={1}
-            max={30}
-            step={1}
-            value={breakDuration}
-            onChange={(e) => setBreakDuration(Number(e.target.value))}
-            className="w-full accent-cyan-500"
-          />
-          <div className="flex justify-between text-xs text-slate-500 mt-1">
-            <span>1m</span>
-            <span>5m</span>
-            <span>15m</span>
-            <span>30m</span>
-          </div>
-        </div>
       </div>
     </SubScreenLayout>
   )
